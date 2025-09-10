@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import {
   Search,
   MessageSquare,
@@ -9,8 +10,10 @@ import {
   Brain,
   Globe,
 } from "lucide-react";
+import Button from "../ui/Button";
 
 const FeaturesSection: React.FC = () => {
+  const location = useLocation();
   const features = [
     {
       icon: Search,
@@ -159,13 +162,19 @@ const FeaturesSection: React.FC = () => {
           <p className="text-lg text-gray-600 mb-8">
             Ready to start your skill exchange journey?
           </p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+          <Button
+            to="/signup"
+            variant="transparent"
+            state={{ background: location }}
           >
-            Explore All Features
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Explore All Features
+            </motion.button>
+          </Button>
         </motion.div>
       </div>
     </section>

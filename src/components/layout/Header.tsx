@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Button from "../ui/Button";
+import { useLocation } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,7 +30,6 @@ const Header: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
-          {/* Logo */}
           <motion.div
             className="flex items-center space-x-2"
             whileHover={{ scale: 1.05 }}
@@ -44,7 +45,6 @@ const Header: React.FC = () => {
             </span>
           </motion.div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <motion.a
               href="#features"
@@ -72,17 +72,25 @@ const Header: React.FC = () => {
             </motion.a>
           </nav>
 
-          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button to="/login" variant="ghost" size="sm">
+            <Button
+              to="/login"
+              variant="ghost"
+              size="sm"
+              state={{ background: location }}
+            >
               Login
             </Button>
-            <Button to="/signup" variant="primary" size="sm">
+            <Button
+              to="/signup"
+              variant="primary"
+              size="sm"
+              state={{ background: location }}
+            >
               Sign Up
             </Button>
           </div>
 
-          {/* Mobile Menu Button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -97,7 +105,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -127,10 +134,22 @@ const Header: React.FC = () => {
                 Community
               </a>
               <div className="flex flex-col space-y-3 pt-4">
-                <Button variant="ghost" size="sm" className="w-full">
+                <Button
+                  to="/login"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  state={{ background: location }}
+                >
                   Login
                 </Button>
-                <Button variant="primary" size="sm" className="w-full">
+                <Button
+                  to="/signup"
+                  variant="primary"
+                  size="sm"
+                  className="w-full"
+                  state={{ background: location }}
+                >
                   Sign Up
                 </Button>
               </div>

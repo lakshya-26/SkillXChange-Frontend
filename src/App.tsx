@@ -1,16 +1,29 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import PWAInstallPrompt from "./components/ui/PWAInstallPrompt";
+import SignupPage from "./pages/SignupPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
+  const location = useLocation();
+  const background = location.state && location.state.background;
+
   return (
     <>
       <PWAInstallPrompt />
-      <Routes>
+      <Routes location={background || location}>
         <Route path="/" element={<HomePage />} />
-        {/* Add other routes for login, signup, etc. here later */}
+        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Fallback for direct access to signup URL to show homepage */}
+        <Route path="/signup" element={<HomePage />} />
       </Routes>
+
+      {background && (
+        <Routes>
+          <Route path="/signup" element={<SignupPage />} />
+        </Routes>
+      )}
     </>
   );
 }

@@ -1,10 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { Play, Users, Award, Zap } from "lucide-react";
 import Button from "../ui/Button";
 
 const HeroSection: React.FC = () => {
   const [videoLoaded, setVideoLoaded] = React.useState(false);
+  const location = useLocation();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -102,7 +104,13 @@ const HeroSection: React.FC = () => {
             transition={{ duration: 0.6, delay: 1 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
           >
-            <Button variant="primary" size="lg" className="px-8 py-4 text-lg">
+            <Button
+              to="/signup"
+              variant="primary"
+              size="lg"
+              className="px-8 py-4 text-lg"
+              state={{ background: location }}
+            >
               <Users className="w-5 h-5 mr-2" />
               Start Exchanging Skills
             </Button>
