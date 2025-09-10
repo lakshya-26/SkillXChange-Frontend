@@ -1,9 +1,11 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Button from "../ui/Button";
 
 const CTASection: React.FC = () => {
+  const location = useLocation();
   const benefits = [
     "Free to join and start exchanging skills",
     "AI-powered matching for perfect partners",
@@ -90,9 +92,11 @@ const CTASection: React.FC = () => {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               <Button
+                to="/signup"
                 variant="outline"
                 size="lg"
                 className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                state={{ background: location }}
               >
                 Learn More
               </Button>
@@ -188,13 +192,20 @@ const CTASection: React.FC = () => {
                 </div>
 
                 {/* Action Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                <Button
+                  to="/signup"
+                  variant="transparent"
+                  baseClassRequired={false}
+                  state={{ background: location }}
                 >
-                  Start Exchanging Skills
-                </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    Start Exchanging Skills
+                  </motion.button>
+                </Button>
               </div>
             </div>
           </motion.div>

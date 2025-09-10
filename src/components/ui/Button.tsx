@@ -4,12 +4,15 @@ import { Link } from "react-router-dom";
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "transparent";
   size?: "sm" | "md" | "lg";
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
-  to?: string; // Add this to handle navigation
+  to?: string;
+  state?: { background?: any };
+  type?: "button" | "submit" | "reset";
+  baseClassRequired?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -19,7 +22,10 @@ const Button: React.FC<ButtonProps> = ({
   className = "",
   onClick,
   disabled = false,
-  to, // Destructure the 'to' prop
+  to,
+  state,
+  type = "button",
+  baseClassRequired = true,
 }) => {
   const baseClasses =
     "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -33,6 +39,8 @@ const Button: React.FC<ButtonProps> = ({
       "border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 focus:ring-blue-500",
     ghost:
       "text-gray-700 hover:text-blue-600 hover:bg-blue-50 focus:ring-blue-500",
+    transparent:
+      "bg-transparent text-gray-700 hover:text-gray-900 focus:ring-gray-500",
   };
 
   const sizeClasses = {
@@ -41,16 +49,15 @@ const Button: React.FC<ButtonProps> = ({
     lg: "px-8 py-4 text-lg",
   };
 
-  const combinedClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  const combinedClasses = `${baseClassRequired ? baseClasses : ""} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 
-  // If a 'to' prop is provided, render a Link component
   if (to) {
     return (
-      <Link to={to}>
+      <Link to={to} state={state} className={combinedClasses}>
         <motion.div
           whileHover={{ scale: disabled ? 1 : 1.02 }}
           whileTap={{ scale: disabled ? 1 : 0.98 }}
-          className={combinedClasses}
+          className="flex items-center justify-center w-full h-full"
         >
           {children}
         </motion.div>
@@ -58,7 +65,6 @@ const Button: React.FC<ButtonProps> = ({
     );
   }
 
-  // Otherwise, render a button
   return (
     <motion.button
       whileHover={{ scale: disabled ? 1 : 1.02 }}
@@ -66,6 +72,7 @@ const Button: React.FC<ButtonProps> = ({
       className={combinedClasses}
       onClick={onClick}
       disabled={disabled}
+      type={type}
     >
       {children}
     </motion.button>
