@@ -2,12 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Button from "../ui/Button";
-import { useLocation } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,7 +75,6 @@ const Header: React.FC = () => {
               to="/login"
               variant="ghost"
               size="sm"
-              state={{ background: location }}
             >
               Login
             </Button>
@@ -85,7 +82,6 @@ const Header: React.FC = () => {
               to="/signup"
               variant="primary"
               size="sm"
-              state={{ background: location }}
             >
               Sign Up
             </Button>
@@ -139,7 +135,6 @@ const Header: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="w-full"
-                  state={{ background: location }}
                 >
                   Login
                 </Button>
@@ -148,7 +143,6 @@ const Header: React.FC = () => {
                   variant="primary"
                   size="sm"
                   className="w-full"
-                  state={{ background: location }}
                 >
                   Sign Up
                 </Button>
