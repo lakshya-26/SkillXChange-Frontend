@@ -1,11 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Button from "../ui/Button";
 
 const CTASection: React.FC = () => {
-  const location = useLocation();
   const benefits = [
     "Free to join and start exchanging skills",
     "AI-powered matching for perfect partners",
@@ -96,7 +94,6 @@ const CTASection: React.FC = () => {
                 variant="outline"
                 size="lg"
                 className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
-                state={{ background: location }}
               >
                 Learn More
               </Button>
@@ -196,7 +193,6 @@ const CTASection: React.FC = () => {
                   to="/signup"
                   variant="transparent"
                   baseClassRequired={false}
-                  state={{ background: location }}
                 >
                   <motion.button
                     whileHover={{ scale: 1.02 }}

@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
 import {
   Search,
   MessageSquare,
@@ -13,7 +12,6 @@ import {
 import Button from "../ui/Button";
 
 const FeaturesSection: React.FC = () => {
-  const location = useLocation();
   const features = [
     {
       icon: Search,
@@ -165,7 +163,6 @@ const FeaturesSection: React.FC = () => {
           <Button
             to="/signup"
             variant="transparent"
-            state={{ background: location }}
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
