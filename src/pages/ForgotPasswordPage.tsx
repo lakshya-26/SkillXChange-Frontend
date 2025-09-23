@@ -1,111 +1,28 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { AtSign, KeyRound, Lock, ArrowLeft } from 'lucide-react';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { AtSign, MailCheck, ArrowLeft } from "lucide-react";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+
+type FormInputs = {
+  email: string;
+};
 
 const ForgotPasswordPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [step, setStep] = useState<'email' | 'otp' | 'reset'>('email');
-  const [userEmail, setUserEmail] = useState('');
-  
+  const [linkSent, setLinkSent] = useState(false);
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
-  } = useForm();
+  } = useForm<FormInputs>();
 
-  const password = watch('password');
-
-  const handleSendOtp = async (data: { email: string }) => {
-    console.log('Requesting OTP for:', data.email);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-    setUserEmail(data.email);
-    setStep('otp');
-  };
-
-  const handleVerifyOtp = async (data: { otp: string }) => {
-    console.log('Verifying OTP:', data.otp);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-    setStep('reset');
-  };
-
-  const handleResetPassword = async (data: object) => {
-    console.log('Resetting password for:', userEmail, data);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-    navigate('/login');
-  };
-
-  const renderStep = () => {
-    switch (step) {
-      case 'email':
-        return (
-          <motion.div key="email" exit={{ opacity: 0, x: -50 }}>
-            <form onSubmit={handleSubmit(handleSendOtp as any)} className="space-y-6">
-              <Input
-                icon={AtSign}
-                type="email"
-                placeholder="Your registered email"
-                {...register('email', { required: 'Email is required' })}
-                error={errors.email?.message as string}
-              />
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? 'Sending...' : 'Send OTP'}
-              </Button>
-            </form>
-          </motion.div>
-        );
-      case 'otp':
-        return (
-          <motion.div key="otp" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-             <p className="text-center text-gray-600 mb-4 text-sm">
-                An OTP has been sent to <strong>{userEmail}</strong>.
-            </p>
-            <form onSubmit={handleSubmit(handleVerifyOtp as any)} className="space-y-6">
-              <Input
-                icon={KeyRound}
-                type="text"
-                placeholder="Enter 6-digit OTP"
-                {...register('otp', { required: 'OTP is required', minLength: 6, maxLength: 6 })}
-                error={errors.otp?.message as string}
-              />
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                 {isSubmitting ? 'Verifying...' : 'Verify OTP'}
-              </Button>
-            </form>
-          </motion.div>
-        );
-      case 'reset':
-        return (
-          <motion.div key="reset" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }}>
-            <form onSubmit={handleSubmit(handleResetPassword)} className="space-y-6">
-              <Input
-                icon={Lock}
-                type="password"
-                placeholder="New Password"
-                {...register('password', { required: 'New password is required', minLength: 8 })}
-                error={errors.password?.message as string}
-              />
-              <Input
-                icon={Lock}
-                type="password"
-                placeholder="Confirm New Password"
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: (value) => value === password || 'Passwords do not match',
-                })}
-                error={errors.confirmPassword?.message as string}
-              />
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Reset Password'}
-              </Button>
-            </form>
-          </motion.div>
-        );
-    }
+  const onSubmit = async (data: FormInputs) => {
+    console.log("Requesting password reset for:", data.email);
+    // Simulate API call to your backend
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setLinkSent(true);
   };
 
   return (
@@ -117,21 +34,74 @@ const ForgotPasswordPage: React.FC = () => {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">Forgot Your Password?</h2>
-            <p className="mt-2 text-gray-600">No worries! We'll help you reset it.</p>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Forgot Your Password?
+          </h2>
+          <p className="mt-2 text-gray-600">
+            {linkSent
+              ? "Check your inbox for the next steps."
+              : "No worries! Enter your email and we'll send you a reset link."}
+          </p>
         </div>
-        
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-            <AnimatePresence mode="wait">
-                {renderStep()}
-            </AnimatePresence>
 
-            <p className="mt-8 text-center text-sm text-gray-600">
-                <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 flex items-center justify-center">
-                    <ArrowLeft size={16} className="mr-1" />
-                    Back to Login
-                </Link>
-            </p>
+        <div className="bg-white rounded-2xl shadow-xl p-8 min-h-[250px] flex flex-col justify-center">
+          {linkSent ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <MailCheck
+                className="mx-auto h-16 w-16 text-green-500"
+                strokeWidth={1.5}
+              />
+              <h3 className="mt-4 text-xl font-semibold text-gray-800">
+                Reset Link Sent!
+              </h3>
+              <p className="mt-2 text-gray-600">
+                A password reset link has been sent to your email address.
+                Please check your inbox and follow the instructions.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.form
+              key="form"
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-6"
+            >
+              <Input
+                icon={AtSign}
+                type="email"
+                placeholder="Your registered email"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                error={errors.email?.message}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Sending..." : "Send Reset Link"}
+              </Button>
+            </motion.form>
+          )}
+          <p className="mt-8 text-center text-sm text-gray-600">
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-500 flex items-center justify-center"
+            >
+              <ArrowLeft size={16} className="mr-1" />
+              Back to Login
+            </Link>
+          </p>
         </div>
       </motion.div>
     </div>
