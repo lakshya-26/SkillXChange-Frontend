@@ -5,21 +5,30 @@ import { Link, useNavigate } from "react-router-dom";
 import { AtSign, Lock } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { authService } from "../services/auth.service";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm();
 
-  const onSubmit = async (data: object) => {
-    console.log("Login data:", data);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Login successful!");
-    navigate("/dashboard");
+  const onSubmit = async (data: any) => {
+    try {
+      console.log("Login data:", data);
+      await authService.login(data.identifier, data.password);
+      console.log("Login successful!");
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Login failed:", error.message);
+      setError("password", {
+        type: "manual",
+        message: error.message,
+      });
+    }
   };
 
   return (
@@ -55,12 +64,12 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <Input
               icon={AtSign}
-              type="email"
+              type="text"
               placeholder="Email or Username"
-              {...register("email", {
+              {...register("identifier", {
                 required: "Email or Username is required",
               })}
-              error={errors.email?.message as string}
+              error={errors.identifier?.message as string}
             />
             <Input
               icon={Lock}
