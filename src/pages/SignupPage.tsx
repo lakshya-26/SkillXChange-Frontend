@@ -5,10 +5,29 @@ import Step1_BasicDetails from "../components/signup/Step1_BasicDetails";
 import Step2_SkillsToLearn from "../components/signup/Step2_SkillsToLearn";
 import Step3_SkillsToTeach from "../components/signup/Step3_SkillsToTeach";
 import Step4_AdditionalInfo from "../components/signup/Step4_AdditionalInfo";
+import { authService } from "../services/auth.service";
+
+interface SignupFormData {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  profession: string;
+  skillsToLearn: string[];
+  skillsToTeach: string[];
+  address: string;
+  phoneNumber?: string;
+  instagram?: string;
+  twitter?: string;
+  github?: string;
+  linkedin?: string;
+}
 
 const SignupPage: React.FC = () => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<SignupFormData>(
+    {} as SignupFormData
+  );
   const navigate = useNavigate();
 
   const nextStep = () => setStep((prev) => prev + 1);
@@ -22,9 +41,27 @@ const SignupPage: React.FC = () => {
   const submitForm = async (data: object) => {
     const finalData = { ...formData, ...data };
     console.log("Submitting form data:", finalData);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Form submitted successfully!");
-    navigate("/dashboard", { replace: true });
+    try {
+      await authService.signup(
+        finalData.name,
+        finalData.username,
+        finalData.email,
+        finalData.password,
+        finalData.profession,
+        finalData.skillsToLearn,
+        finalData.skillsToTeach,
+        finalData.address,
+        finalData.phoneNumber,
+        finalData.instagram,
+        finalData.twitter,
+        finalData.github,
+        finalData.linkedin
+      );
+     console.log("Form submitted successfully!");
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
   };
 
   const totalSteps = 4;
@@ -76,18 +113,24 @@ const SignupPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-xl">
         <div className="text-center mb-4">
-           <Link to="/" className="inline-block">
-                <div className="flex items-center justify-center space-x-2">
-                    <img src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png" alt="SkillXChange Logo" className="w-10 h-10 object-contain" />
-                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">SkillXChange</span>
-                </div>
-           </Link>
+          <Link to="/" className="inline-block">
+            <div className="flex items-center justify-center space-x-2">
+              <img
+                src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png"
+                alt="SkillXChange Logo"
+                className="w-10 h-10 object-contain"
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                SkillXChange
+              </span>
+            </div>
+          </Link>
         </div>
         <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-xl w-full relative"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-2xl shadow-xl w-full relative"
         >
           <div className="p-8">
             <div className="mb-6">
@@ -112,7 +155,7 @@ const SignupPage: React.FC = () => {
           </div>
         </motion.div>
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             to="/login"
             className="font-medium text-blue-600 hover:text-blue-500 hover:underline"

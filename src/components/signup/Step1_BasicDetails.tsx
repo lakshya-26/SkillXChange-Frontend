@@ -64,8 +64,8 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
           <Input
             icon={User}
             placeholder="Full Name"
-            {...register("fullName", { required: "Full Name is required" })}
-            error={errors.fullName?.message as string}
+            {...register("name", { required: "Full Name is required" })}
+            error={errors.name?.message as string}
           />
         </motion.div>
         <motion.div

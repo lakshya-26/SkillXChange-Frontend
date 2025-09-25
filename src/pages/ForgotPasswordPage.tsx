@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { AtSign, MailCheck, ArrowLeft } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { authService } from "../services/auth.service";
 
 type FormInputs = {
   email: string;
@@ -12,6 +13,7 @@ type FormInputs = {
 
 const ForgotPasswordPage: React.FC = () => {
   const [linkSent, setLinkSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -19,10 +21,16 @@ const ForgotPasswordPage: React.FC = () => {
   } = useForm<FormInputs>();
 
   const onSubmit = async (data: FormInputs) => {
-    console.log("Requesting password reset for:", data.email);
-    // Simulate API call to your backend
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLinkSent(true);
+    setErrorMessage(null);
+    try {
+      await authService.forgotPassword(data.email);
+      setLinkSent(true);
+    } catch (error: any) {
+      setErrorMessage(
+        error.message || "Failed to send reset link. Please try again."
+      );
+      setLinkSent(false);
+    }
   };
 
   return (
@@ -92,6 +100,11 @@ const ForgotPasswordPage: React.FC = () => {
                 {isSubmitting ? "Sending..." : "Send Reset Link"}
               </Button>
             </motion.form>
+          )}
+          {errorMessage && (
+            <p className="mt-4 text-center text-sm text-red-600">
+              {errorMessage}
+            </p>
           )}
           <p className="mt-8 text-center text-sm text-gray-600">
             <Link

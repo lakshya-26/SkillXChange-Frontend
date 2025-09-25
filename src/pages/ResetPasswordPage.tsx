@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, AlertTriangle, CheckCircle } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { authService } from "../services/auth.service";
 
 type FormInputs = {
   password?: string;
@@ -42,24 +43,45 @@ const ResetPasswordPage: React.FC = () => {
   }, [token]);
 
   const onSubmit = async (data: FormInputs) => {
-    console.log("Resetting password with token:", token, data);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const apiOutcome = "success";
-
-    if (apiOutcome === "success") {
-      setApiStatus({
-        type: "success",
-        message: "Password reset successfully!",
-      });
-    } else if (apiOutcome === "token_expired") {
+    setApiStatus(null);
+    if (!token) {
       setApiStatus({
         type: "error",
-        message: "Reset token has expired or is invalid.",
+        message: "Invalid or missing reset token. Please request a new link.",
       });
-    } else {
-      setApiStatus({ type: "error", message: "User not found." });
+      return;
+    }
+
+    if (!data.password || !data.confirmPassword) {
+        setApiStatus({
+            type: "error",
+            message: "Please enter and confirm your new password.",
+        });
+        return;
+    }
+
+    if (data.password !== data.confirmPassword) {
+      setApiStatus({
+        type: "error",
+        message: "Passwords do not match.",
+      });
+      return;
+    }
+
+    try {
+      await authService.resetPassword(token, data.password);
+      setApiStatus({
+        type: "success",
+        message: "Password reset successfully! Redirecting to login...",
+      });
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+    } catch (error: any) {
+      setApiStatus({
+        type: "error",
+        message: error.message || "Failed to reset password. Please try again.",
+      });
     }
   };
 
