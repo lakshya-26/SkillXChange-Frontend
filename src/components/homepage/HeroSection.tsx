@@ -16,9 +16,9 @@ const HeroSection: React.FC = () => {
           muted
           playsInline
           className="w-full h-full object-cover"
-          src="https://res.cloudinary.com/dca9jrn70/video/upload/v1757440585/Video_Generation_Skill_Exchange_Concept_i0ny4w.mp4"
+          src="https://res.cloudinary.com/dca9jrn70/video/upload/v1758794656/Untitled_design_j9n7lr.mp4"
           onLoadedData={() => setVideoLoaded(true)}
-          style={{ opacity: videoLoaded ? 1 : 0, transition: "opacity 0.3s" }}
+          style={{ opacity: videoLoaded ? 0.9 : 0, transition: "opacity 0.3s" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-blue-800/30 to-transparent" />
       </div>
