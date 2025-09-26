@@ -30,15 +30,19 @@ const SignupPage: React.FC = () => {
   );
   const navigate = useNavigate();
 
+  const totalSteps = 4;
+  const progress = (step / totalSteps) * 100;
+
+  // Update form data and optionally go to next step
+  const updateFormData = (data: Partial<SignupFormData>, goNext = true) => {
+    setFormData((prev) => ({ ...prev, ...data }));
+    if (goNext) nextStep();
+  };
+
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  const updateFormData = (data: object) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-    nextStep();
-  };
-
-  const submitForm = async (data: object) => {
+  const submitForm = async (data: Partial<SignupFormData>) => {
     const finalData = { ...formData, ...data };
     console.log("Submitting form data:", finalData);
     try {
@@ -57,51 +61,44 @@ const SignupPage: React.FC = () => {
         finalData.github,
         finalData.linkedin
       );
-     console.log("Form submitted successfully!");
+      console.log("Form submitted successfully!");
       navigate("/dashboard", { replace: true });
     } catch (error) {
       console.error("Signup failed:", error);
     }
   };
 
-  const totalSteps = 4;
-  const progress = (step / totalSteps) * 100;
-
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <Step1_BasicDetails
-            key="step1"
-            updateFormData={updateFormData}
             formData={formData}
+            updateFormData={updateFormData}
           />
         );
       case 2:
         return (
           <Step2_SkillsToLearn
-            key="step2"
+            formData={formData}
             updateFormData={updateFormData}
             prevStep={prevStep}
-            formData={formData}
           />
         );
       case 3:
         return (
           <Step3_SkillsToTeach
-            key="step3"
+            formData={formData}
             updateFormData={updateFormData}
             prevStep={prevStep}
-            formData={formData}
           />
         );
       case 4:
         return (
           <Step4_AdditionalInfo
-            key="step4"
+            formData={formData}
             submitForm={submitForm}
             prevStep={prevStep}
-            formData={formData}
           />
         );
       default:
@@ -112,6 +109,7 @@ const SignupPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-xl">
+        {/* Logo */}
         <div className="text-center mb-4">
           <Link to="/" className="inline-block">
             <div className="flex items-center justify-center space-x-2">
@@ -126,6 +124,8 @@ const SignupPage: React.FC = () => {
             </div>
           </Link>
         </div>
+
+        {/* Main Card */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -133,6 +133,7 @@ const SignupPage: React.FC = () => {
           className="bg-white rounded-2xl shadow-xl w-full relative"
         >
           <div className="p-8">
+            {/* Progress */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-semibold text-gray-800">
@@ -151,9 +152,23 @@ const SignupPage: React.FC = () => {
                 />
               </div>
             </div>
-            <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
+
+            {/* Step Content with animation */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                {renderStep()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
+
+        {/* Footer */}
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{" "}
           <Link
