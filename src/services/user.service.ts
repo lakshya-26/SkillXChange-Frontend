@@ -1,0 +1,60 @@
+import { apiFetch } from "./api";
+const BASE_URL = `${import.meta.env.VITE_EXCHANGE_AUTH_BASE_URL}/api`;
+
+export type UserDetails = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  profession?: string;
+  address?: string;
+  phoneNumber?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  github?: string;
+  skillsToLearn?: string[];
+  skillsToTeach?: string[];
+};
+
+export const userService = {
+  async me(): Promise<UserDetails> {
+    const res = await apiFetch(`${BASE_URL}/users/me`, { method: "GET" });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to fetch profile"
+      );
+    const { data } = await res.json();
+    return data;
+  },
+
+  async profileById(id: string | number): Promise<UserDetails> {
+    const res = await apiFetch(`${BASE_URL}/users/profile/${id}`, { method: "GET" });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to fetch user profile"
+      );
+    const { data } = await res.json();
+    return data;
+  },
+
+  async updateProfile(
+    payload: Partial<Pick<UserDetails, "name" | "username" | "email">> & {
+      password?: string;
+    }
+  ) {
+    const res = await apiFetch(`${BASE_URL}/users/profile`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to update profile"
+      );
+    const { data } = await res.json();
+    return data;
+  },
+};
