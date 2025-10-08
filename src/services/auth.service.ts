@@ -1,5 +1,20 @@
 const BASE_URL = `${import.meta.env.VITE_EXCHANGE_AUTH_BASE_URL}/api`;
 
+type Tokens = { accessToken: string; refreshToken: string };
+const ACCESS_KEY = "accessToken";
+const REFRESH_KEY = "refreshToken";
+
+const setTokens = ({ accessToken, refreshToken }: Tokens) => {
+  localStorage.setItem(ACCESS_KEY, accessToken);
+  localStorage.setItem(REFRESH_KEY, refreshToken);
+};
+const getAccessToken = () => localStorage.getItem(ACCESS_KEY) || "";
+const getRefreshToken = () => localStorage.getItem(REFRESH_KEY) || "";
+const clearTokens = () => {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+};
+
 const checkAvailability = async (params: {
   email?: string;
   username?: string;
@@ -10,7 +25,6 @@ const checkAvailability = async (params: {
   const response = await fetch(`${BASE_URL}/users?${search.toString()}`);
 
   const data = await response.json();
-  console.log("Availability check data:", data);
   const message = (data && data.message) as string | undefined;
   const existsByEmail = params.email && data?.data?.email === params.email;
   const existsByUsername =
@@ -43,7 +57,14 @@ const login = async (identifier: string, password: string) => {
     throw new Error(errorData.message || "Login failed");
   }
 
-  return response.json();
+  const data = await response.json();
+  if (data?.data?.accessToken && data?.data?.refreshToken) {
+    setTokens({
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+    });
+  }
+  return data;
 };
 
 const signup = async (
@@ -88,7 +109,14 @@ const signup = async (
     throw new Error(errorData.message || "Signup failed");
   }
 
-  return response.json();
+  const data = await response.json();
+  if (data?.data?.accessToken && data?.data?.refreshToken) {
+    setTokens({
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+    });
+  }
+  return data;
 };
 
 const forgotPassword = async (email: string) => {
@@ -125,10 +153,38 @@ const resetPassword = async (token: string, newPassword: string) => {
   return response.json();
 };
 
+const refreshTokens = async (): Promise<Tokens> => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error("No refresh token");
+
+  const res = await fetch(`${BASE_URL}/users/refresh-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to refresh token");
+  }
+
+  const data = (await res.json()) as { data: Tokens };
+  if (!data?.data?.accessToken || !data?.data?.refreshToken) {
+    throw new Error("Invalid refresh response");
+  }
+  setTokens(data.data);
+  return data.data;
+};
+
 export const authService = {
   login,
   signup,
   forgotPassword,
   resetPassword,
   checkAvailability,
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  clearTokens,
+  refreshTokens,
 };

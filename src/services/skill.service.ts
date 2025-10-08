@@ -6,7 +6,6 @@ const getSkills = async (searchTerm: string) => {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
   });
 
@@ -23,7 +22,6 @@ const addSkill = async (skillName: string) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
     body: JSON.stringify({ name: skillName }),
   });
