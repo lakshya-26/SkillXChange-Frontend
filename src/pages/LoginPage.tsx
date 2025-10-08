@@ -18,7 +18,6 @@ const LoginPage: React.FC = () => {
 
   const onSubmit = async (data: any) => {
     try {
-      console.log("Login data:", data);
       await authService.login(data.identifier, data.password);
       console.log("Login successful!");
       navigate("/dashboard");

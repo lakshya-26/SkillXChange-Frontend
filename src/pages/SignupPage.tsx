@@ -44,7 +44,6 @@ const SignupPage: React.FC = () => {
 
   const submitForm = async (data: Partial<SignupFormData>) => {
     const finalData = { ...formData, ...data };
-    console.log("Submitting form data:", finalData);
     try {
       await authService.signup(
         finalData.name,
