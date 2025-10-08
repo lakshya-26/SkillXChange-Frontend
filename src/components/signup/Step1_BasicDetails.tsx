@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { User, AtSign, Briefcase, Lock, Zap } from "lucide-react";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
+import { authService } from "../../services/auth.service";
 
 interface Step1Props {
   updateFormData: (data: object) => void;
@@ -18,12 +19,15 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
     register,
     handleSubmit,
     watch,
+    trigger,
     formState: { errors },
-  } = useForm({ defaultValues: formData });
+  } = useForm({ defaultValues: formData, mode: "onBlur" });
 
   const password = watch("password");
 
-  const onSubmit = (data: object) => {
+  const onSubmit = async (data: any) => {
+    const isValid = await trigger(["username", "email"]);
+    if (!isValid) return;
     updateFormData(data);
   };
 
@@ -75,7 +79,20 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
           <Input
             icon={User}
             placeholder="Username"
-            {...register("username", { required: "Username is required" })}
+            {...register("username", {
+              required: "Username is required",
+              validate: async (value: string) => {
+                if (!value) return "Username is required";
+                try {
+                  const res = await authService.checkAvailability({
+                    username: value,
+                  });
+                  return res.available || "Username already exists";
+                } catch (e) {
+                  return true;
+                }
+              },
+            })}
             error={errors.username?.message as string}
           />
           <Input
@@ -95,6 +112,17 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
               pattern: {
                 value: /^\S+@\S+$/i,
                 message: "Invalid email address",
+              },
+              validate: async (value: string) => {
+                if (!/^\S+@\S+$/i.test(value)) return "Invalid email address";
+                try {
+                  const res = await authService.checkAvailability({
+                    email: value,
+                  });
+                  return res.available || "Email already exists";
+                } catch (e) {
+                  return true;
+                }
               },
             })}
             error={errors.email?.message as string}

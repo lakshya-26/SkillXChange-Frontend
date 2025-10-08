@@ -1,5 +1,30 @@
 const BASE_URL = `${import.meta.env.VITE_EXCHANGE_AUTH_BASE_URL}/api`;
 
+const checkAvailability = async (params: {
+  email?: string;
+  username?: string;
+}) => {
+  const search = new URLSearchParams();
+  if (params.email) search.set("email", params.email);
+  if (params.username) search.set("username", params.username);
+  const response = await fetch(`${BASE_URL}/users?${search.toString()}`);
+
+  const data = await response.json();
+  console.log("Availability check data:", data);
+  const message = (data && data.message) as string | undefined;
+  const existsByEmail = params.email && data?.data?.email === params.email;
+  const existsByUsername =
+    params.username && data?.data?.username === params.username;
+
+  return {
+    available:
+      message === "User not found"
+        ? true
+        : !(existsByEmail || existsByUsername),
+    data,
+  } as { available: boolean; data: any };
+};
+
 const login = async (identifier: string, password: string) => {
   const isEmail = identifier.includes("@");
   const body = isEmail
@@ -34,14 +59,28 @@ const signup = async (
   instagram?: string,
   twitter?: string,
   github?: string,
-  linkedin?: string,
+  linkedin?: string
 ) => {
   const response = await fetch(`${BASE_URL}/users/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ name, username, email, password, profession, skillsToLearn, skillsToTeach, address, phoneNumber, instagram, twitter, github, linkedin }),
+    body: JSON.stringify({
+      name,
+      username,
+      email,
+      password,
+      profession,
+      skillsToLearn,
+      skillsToTeach,
+      address,
+      phoneNumber,
+      instagram,
+      twitter,
+      github,
+      linkedin,
+    }),
   });
 
   if (!response.ok) {
@@ -91,4 +130,5 @@ export const authService = {
   signup,
   forgotPassword,
   resetPassword,
+  checkAvailability,
 };
