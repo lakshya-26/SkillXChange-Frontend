@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService, type UserDetails } from "../services/user.service";
 import { authService } from "../services/auth.service";
@@ -13,30 +13,73 @@ import {
   Instagram,
   Twitter,
   Briefcase,
+  PlusCircle,
+  XCircle,
 } from "lucide-react";
+import SkillSelector from "../components/signup/SkillSelector";
 
 type EditForm = {
   name?: string;
   username?: string;
   email?: string;
+  profession?: string;
+  address?: string;
+  phoneNumber?: string;
+  instagram?: string;
+  twitter?: string;
+  github?: string;
+  linkedin?: string;
+  skillsToLearn?: string[]; // stored internally as array
+  skillsToTeach?: string[]; // stored internally as array
 };
 
 const SkillChips: React.FC<{
   title: string;
   skills: string[];
   colorClass: string;
-}> = ({ title, skills, colorClass }) => {
-  if (!skills || skills.length === 0) return null;
+  onAdd?: () => void;
+  onRemove?: (skill: string) => void;
+}> = ({ title, skills, colorClass, onAdd, onRemove }) => {
+  if (!skills || skills.length === 0) {
+    return (
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+          {onAdd && (
+            <Button size="sm" variant="ghost" onClick={onAdd}>
+              <PlusCircle className="h-4 w-4 mr-1" /> Add
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">No items yet</p>
+      </div>
+    );
+  }
   return (
     <div className="mb-6">
-      <h3 className="text-sm font-semibold text-gray-700 mb-2">{title}</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+        {onAdd && (
+          <Button size="sm" variant="ghost" onClick={onAdd}>
+            <PlusCircle className="h-4 w-4 mr-1" /> Add
+          </Button>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2">
         {skills.map((s, idx) => (
           <span
             key={`${s}-${idx}`}
-            className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass} flex items-center`}
           >
             {s}
+            {onRemove && (
+              <XCircle
+                className="h-3.5 w-3.5 ml-2 cursor-pointer opacity-70 hover:opacity-100"
+                onClick={() => onRemove(s)}
+                aria-label={`Remove ${s}`}
+                title={`Remove ${s}`}
+              />
+            )}
           </span>
         ))}
       </div>
@@ -53,8 +96,15 @@ const ProfilePage: React.FC = () => {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({});
   const [avatarModal, setAvatarModal] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hasToken = !!authService.getAccessToken();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [skillModalOpen, setSkillModalOpen] = useState<
+    false | "learn" | "teach"
+  >(false);
+  const [skillTemp, setSkillTemp] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -119,30 +169,79 @@ const ProfilePage: React.FC = () => {
       name: user.name,
       username: user.username,
       email: user.email,
+      profession: user.profession || "",
+      address: user.address || "",
+      phoneNumber: user.phoneNumber || "",
+      instagram: user.instagram || "",
+      twitter: user.twitter || "",
+      github: user.github || "",
+      linkedin: user.linkedin || "",
+      skillsToLearn: user.skillsToLearn || [],
+      skillsToTeach: user.skillsToTeach || [],
     });
     setEditing(true);
   };
 
+  const parseSkills = (val: string) =>
+    val
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+  const skillsToString = (arr?: string[]) =>
+    arr && arr.length ? arr.join(", ") : "";
+
   const submitEdit = async () => {
     try {
       setError(null);
-      await userService.updateProfile({
+      // Send all fields (no password update)
+      const updated = await userService.updateProfile({
         name: editForm.name,
         username: editForm.username,
         email: editForm.email,
+        profession: editForm.profession,
+        address: editForm.address,
+        phoneNumber: editForm.phoneNumber,
+        instagram: editForm.instagram,
+        twitter: editForm.twitter,
+        github: editForm.github,
+        linkedin: editForm.linkedin,
+        skillsToLearn: editForm.skillsToLearn,
+        skillsToTeach: editForm.skillsToTeach,
+        profileImage: null, // not changing here
       });
-      // Refresh me and current user if it's my profile
-      const meData = await userService.me();
-      setMe(meData);
+
+      // Use returned user directly to refresh UI
+      setMe((prev) => (prev && isOwnProfile ? updated : prev));
       if (!id || isOwnProfile) {
-        setUser(meData);
+        setUser(updated);
       } else if (id) {
+        // If editing someone else (unlikely), refetch
         const other = await userService.profileById(id);
         setUser(other);
       }
       setEditing(false);
     } catch (e: any) {
       setError(e?.message || "Failed to update profile");
+    }
+  };
+
+  const submitAvatar = async () => {
+    if (!avatarFile) {
+      setAvatarModal(false);
+      return;
+    }
+    try {
+      setError(null);
+      const updated = await userService.updateProfile({
+        profileImage: avatarFile,
+      });
+      setMe((prev) => (prev && isOwnProfile ? updated : prev));
+      setUser(updated);
+      setAvatarModal(false);
+      setAvatarFile(null);
+    } catch (e: any) {
+      setError(e?.message || "Failed to update profile picture");
     }
   };
 
@@ -169,7 +268,7 @@ const ProfilePage: React.FC = () => {
   if (error || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-md w-full text-center">
+        <Card className="max-w-md w-full text-center p-6">
           <h2 className="text-xl font-semibold mb-2">Unable to load profile</h2>
           <p className="text-gray-600 mb-4">
             {error || "Please try again later."}
@@ -180,21 +279,74 @@ const ProfilePage: React.FC = () => {
     );
   }
 
+  const openSkillModal = (type: "learn" | "teach") => {
+    if (!user) return;
+    setSkillModalOpen(type);
+    setSkillTemp(
+      type === "learn" ? user.skillsToLearn || [] : user.skillsToTeach || []
+    );
+  };
+
+  const saveSkillModal = async () => {
+    if (!skillModalOpen) return;
+    try {
+      setError(null);
+      const payload =
+        skillModalOpen === "learn"
+          ? { skillsToLearn: skillTemp }
+          : { skillsToTeach: skillTemp };
+      const updated = await userService.updateProfile(payload);
+      setMe((prev) => (prev && isOwnProfile ? updated : prev));
+      setUser(updated);
+      setSkillModalOpen(false);
+      setSkillTemp([]);
+    } catch (e: any) {
+      setError(e?.message || "Failed to update skills");
+    }
+  };
+
+  const handleRemoveSkill = async (type: "learn" | "teach", skill: string) => {
+    if (!isOwnProfile || !user) return;
+    try {
+      setError(null);
+      const current =
+        type === "learn" ? user.skillsToLearn || [] : user.skillsToTeach || [];
+      const next = current.filter((s) => s !== skill);
+      const payload =
+        type === "learn" ? { skillsToLearn: next } : { skillsToTeach: next };
+      const updated = await userService.updateProfile(payload);
+      setMe((prev) => (prev && isOwnProfile ? updated : prev));
+      setUser(updated);
+    } catch (e: any) {
+      setError(e?.message || "Failed to remove skill");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left: Avatar + quick actions */}
         <div className="md:col-span-1">
           <Card className="p-6 flex flex-col items-center">
-            {/* Placeholder avatar with initials; click to edit/add */}
+            {/* Avatar: show image if available, else initials */}
             <button
-              onClick={() => setAvatarModal(true)}
-              className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center text-4xl font-bold shadow-lg hover:opacity-90 transition"
+              onClick={() => isOwnProfile && setAvatarModal(true)}
+              className="w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center text-4xl font-bold shadow-lg hover:opacity-90 transition"
               title={
                 isOwnProfile ? "Edit/Add profile picture" : "Profile picture"
               }
             >
-              {initials(user.name)}
+              {user.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="bg-gradient-to-br from-blue-600 to-blue-800 text-white w-full h-full flex items-center justify-center">
+                  {initials(user.name)}
+                </span>
+              )}
             </button>
             <h2 className="mt-4 text-xl font-bold">{user.name}</h2>
             <p className="text-gray-500">@{user.username}</p>
@@ -343,11 +495,23 @@ const ProfilePage: React.FC = () => {
                 title="Skills to Learn"
                 skills={learnSkills}
                 colorClass="bg-blue-50 text-blue-700 border border-blue-200"
+                onAdd={isOwnProfile ? () => openSkillModal("learn") : undefined}
+                onRemove={
+                  isOwnProfile
+                    ? (s) => handleRemoveSkill("learn", s)
+                    : undefined
+                }
               />
               <SkillChips
                 title="Skills to Teach"
                 skills={teachSkills}
                 colorClass="bg-emerald-50 text-emerald-700 border border-emerald-200"
+                onAdd={isOwnProfile ? () => openSkillModal("teach") : undefined}
+                onRemove={
+                  isOwnProfile
+                    ? (s) => handleRemoveSkill("teach", s)
+                    : undefined
+                }
               />
             </div>
           </Card>
@@ -356,34 +520,139 @@ const ProfilePage: React.FC = () => {
 
       {/* Edit modal (own profile only) */}
       {editing && isOwnProfile && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto mx-4">
             <h3 className="text-lg font-semibold mb-4">Edit Profile</h3>
             <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="Name"
-                value={editForm.name || ""}
-                onChange={(e: any) =>
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
-                }
-              />
-              <Input
-                type="text"
-                placeholder="Username"
-                value={editForm.username || ""}
-                onChange={(e: any) =>
-                  setEditForm((f) => ({ ...f, username: e.target.value }))
-                }
-              />
-              <Input
-                type="email"
-                placeholder="Email"
-                value={editForm.email || ""}
-                onChange={(e: any) =>
-                  setEditForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Name</label>
+                <Input
+                  type="text"
+                  placeholder="Name"
+                  value={editForm.name || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Username
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Username"
+                  value={editForm.username || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, username: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={editForm.email || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Profession
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Profession"
+                  value={editForm.profession || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, profession: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Address
+                </label>
+                <textarea
+                  placeholder="Address"
+                  value={editForm.address || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, address: e.target.value }))
+                  }
+                  className="w-full border rounded-md p-2 text-sm"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Phone Number
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Phone Number"
+                  value={editForm.phoneNumber || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, phoneNumber: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Instagram
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Instagram (username only)"
+                  value={editForm.instagram || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, instagram: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  Twitter
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Twitter (username only)"
+                  value={editForm.twitter || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, twitter: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  GitHub
+                </label>
+                <Input
+                  type="text"
+                  placeholder="GitHub (username only)"
+                  value={editForm.github || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, github: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  LinkedIn
+                </label>
+                <Input
+                  type="text"
+                  placeholder="LinkedIn (handle after /in/)"
+                  value={editForm.linkedin || ""}
+                  onChange={(e: any) =>
+                    setEditForm((f) => ({ ...f, linkedin: e.target.value }))
+                  }
+                />
+              </div>
               {error && <p className="text-red-600 text-sm">{error}</p>}
             </div>
             <div className="mt-6 flex items-center justify-end gap-3">
@@ -396,15 +665,68 @@ const ProfilePage: React.FC = () => {
         </div>
       )}
       {avatarModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center">
-            <h3 className="text-lg font-semibold mb-2">Profile Picture</h3>
-            <p className="text-gray-600">
-              Picture upload isn’t available yet. We’ll add it once backend
-              supports it.
-            </p>
-            <div className="mt-6">
-              <Button onClick={() => setAvatarModal(false)}>Close</Button>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto mx-4">
+            <h3 className="text-lg font-semibold mb-2">
+              Update Profile Picture
+            </h3>
+            <input
+              ref={fileInputRef}
+              id="avatarFileInput"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e: any) => setAvatarFile(e.target.files?.[0] || null)}
+            />
+            <Button onClick={() => fileInputRef.current?.click()}>
+              Choose Image
+            </Button>
+            <div className="mt-3 text-sm text-gray-700" aria-live="polite">
+              {avatarFile ? `Selected: ${avatarFile.name}` : "No file chosen"}
+            </div>
+            {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setAvatarModal(false);
+                  setAvatarFile(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={submitAvatar} disabled={!avatarFile}>
+                Upload
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {skillModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto mx-4">
+            <h3 className="text-lg font-semibold mb-4">
+              {skillModalOpen === "learn"
+                ? "Edit Skills to Learn"
+                : "Edit Skills to Teach"}
+            </h3>
+            <SkillSelector
+              selectedSkills={skillTemp}
+              onSkillChange={setSkillTemp}
+              skillType={skillModalOpen === "learn" ? "learn" : "teach"}
+            />
+            {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSkillModalOpen(false);
+                  setSkillTemp([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={saveSkillModal}>Save</Button>
             </div>
           </div>
         </div>
