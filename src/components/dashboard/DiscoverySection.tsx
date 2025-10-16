@@ -138,7 +138,7 @@ const DiscoverySection: React.FC = () => {
             type="button"
             aria-label="Scroll left"
             onClick={() => scrollByAmount(-1)}
-            className="absolute left-0 top-24 md:top-1/2 -translate-y-1/2 md:-translate-y-1/2 ml-[-8px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 rounded-full shadow-lg bg-white border border-gray-200 p-2 flex"
+            className="absolute left-0 top-24 -translate-y-1/2 md:-translate-y-1/2 ml-[-8px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 rounded-full shadow-lg bg-white border border-gray-200 p-2 flex"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -148,7 +148,7 @@ const DiscoverySection: React.FC = () => {
             type="button"
             aria-label="Scroll right"
             onClick={() => scrollByAmount(1)}
-            className="absolute right-0 top-24 md:top-1/2 -translate-y-1/2 md:-translate-y-1/2 mr-[-8px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 rounded-full shadow-lg bg-white border border-gray-200 p-2 flex"
+            className="absolute right-0 top-24 -translate-y-1/2 md:-translate-y-1/2 mr-[-8px] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 rounded-full shadow-lg bg-white border border-gray-200 p-2 flex"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
