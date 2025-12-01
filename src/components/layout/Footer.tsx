@@ -71,7 +71,7 @@ const Footer: React.FC = () => {
               {[
                 { Icon: Twitter, href: "#", label: "Twitter" },
                 { Icon: Linkedin, href: "#", label: "LinkedIn" },
-                { Icon: Github, href: "#", label: "GitHub" },
+                { Icon: Github, href: "https://github.com/lakshya-26/SkillXChange", label: "GitHub" },
               ].map(({ Icon, href, label }) => (
                 <motion.a
                   key={label}
@@ -130,21 +130,21 @@ const Footer: React.FC = () => {
               <Mail className="w-5 h-5 text-blue-400" />
               <div>
                 <div className="text-sm text-gray-400">Email</div>
-                <div className="text-white">hello@skillxchange.com</div>
+                <div className="text-white">skillxchange@gmail.com</div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Phone className="w-5 h-5 text-green-400" />
               <div>
                 <div className="text-sm text-gray-400">Phone</div>
-                <div className="text-white">+1 (555) 123-4567</div>
+                <div className="text-white">+91 6290 69 8356</div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <MapPin className="w-5 h-5 text-purple-400" />
               <div>
                 <div className="text-sm text-gray-400">Location</div>
-                <div className="text-white">San Francisco, CA</div>
+                <div className="text-white">Udaipur, India</div>
               </div>
             </div>
           </div>

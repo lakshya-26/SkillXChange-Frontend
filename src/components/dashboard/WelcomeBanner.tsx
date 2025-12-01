@@ -2,7 +2,6 @@ import React from "react";
 import {
   Sparkles,
   Star,
-  PlusCircle,
   Search,
   MessageSquare,
 } from "lucide-react";
