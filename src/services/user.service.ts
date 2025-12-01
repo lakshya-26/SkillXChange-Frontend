@@ -49,7 +49,9 @@ export const userService = {
   },
 
   async profileById(id: string | number): Promise<UserDetails> {
-    const res = await apiFetch(`${BASE_URL}/users/profile/${id}`, { method: "GET" });
+    const res = await apiFetch(`${BASE_URL}/users/profile/${id}`, {
+      method: "GET",
+    });
     if (!res.ok)
       throw new Error(
         (await res.json().catch(() => ({}))).message ||
@@ -116,4 +118,42 @@ export const userService = {
       return data as UserDetails;
     }
   },
+
+  async searchUsers(query: string): Promise<UserMatch[]> {
+    const res = await apiFetch(
+      `${BASE_URL}/users/search?term=${encodeURIComponent(query)}`,
+      {
+        method: "GET",
+      }
+    );
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message || "Failed to search users"
+      );
+    const { data } = await res.json();
+    return data as UserMatch[];
+  },
+
+  async getRecommendations(): Promise<UserMatch[]> {
+    const res = await apiFetch(`${BASE_URL}/users/recommendations`, {
+      method: "GET",
+    });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to fetch recommendations"
+      );
+    const { data } = await res.json();
+    return data as UserMatch[];
+  },
 };
+
+export interface UserMatch {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  profession: string;
+  skills: { id: number; name: string; type: "LEARN" | "TEACH" }[];
+  score: number;
+}
