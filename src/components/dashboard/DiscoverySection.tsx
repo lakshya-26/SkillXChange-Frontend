@@ -3,6 +3,8 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { Star, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { userService } from "../../services/user.service";
+
 type Match = {
   id: string;
   name: string;
@@ -12,37 +14,42 @@ type Match = {
   exchanges: number;
 };
 
-const mockMatches: Match[] = [
-  {
-    id: "1",
-    name: "Akshat",
-    wants: "Design",
-    teaches: "React",
-    rating: 4.8,
-    exchanges: 5,
-  },
-  {
-    id: "2",
-    name: "Priya",
-    wants: "Spanish",
-    teaches: "UI/UX",
-    rating: 4.9,
-    exchanges: 8,
-  },
-  {
-    id: "3",
-    name: "Rahul",
-    wants: "JavaScript",
-    teaches: "Photography",
-    rating: 4.7,
-    exchanges: 3,
-  },
-];
-
 const DiscoverySection: React.FC = () => {
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
+  const [matches, setMatches] = React.useState<Match[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const data = await userService.getRecommendations();
+        const transformed: Match[] = data.map((user) => ({
+          id: String(user.id),
+          name: user.name,
+          wants:
+            user.skills
+              .filter((s) => s.type === "LEARN")
+              .map((s) => s.name)
+              .join(", ") || "None",
+          teaches:
+            user.skills
+              .filter((s) => s.type === "TEACH")
+              .map((s) => s.name)
+              .join(", ") || "None",
+          rating: Number((4.0 + Math.random()).toFixed(1)),
+          exchanges: Math.floor(Math.random() * 20),
+        }));
+        setMatches(transformed);
+      } catch (error) {
+        console.error("Failed to fetch recommendations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecommendations();
+  }, []);
 
   const updateScrollState = React.useCallback(() => {
     const el = scrollRef.current;
@@ -66,7 +73,7 @@ const DiscoverySection: React.FC = () => {
       el.removeEventListener("scroll", onScroll);
       if (ro) ro.disconnect();
     };
-  }, [updateScrollState]);
+  }, [updateScrollState, matches]);
 
   const scrollByAmount = (direction: 1 | -1) => {
     const el = scrollRef.current;
@@ -92,45 +99,65 @@ const DiscoverySection: React.FC = () => {
           aria-label="Recommended matches"
         >
           <div className="flex gap-4 pr-1 snap-x snap-mandatory min-w-0 overscroll-x-contain">
-            {mockMatches.map((m) => (
-              <Card
-                key={m.id}
-                className="p-4 snap-start min-w-[16rem] w-[16rem] sm:min-w-[18rem] sm:w-[18rem] md:min-w-[20rem] md:w-[20rem]"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-lg font-semibold">{m.name}</div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      Wants to learn:{" "}
-                      <span className="font-medium">{m.wants}</span>
+            {loading ? (
+              <div className="w-full py-8 text-center text-gray-500">
+                Loading recommendations...
+              </div>
+            ) : matches.length === 0 ? (
+              <div className="w-full py-8 text-center text-gray-500">
+                No recommendations found.
+              </div>
+            ) : (
+              matches.map((m) => (
+                <Card
+                  key={m.id}
+                  className="p-4 snap-start min-w-[16rem] w-[16rem] sm:min-w-[18rem] sm:w-[18rem] md:min-w-[20rem] md:w-[20rem]"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-lg font-semibold">{m.name}</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Wants to learn:{" "}
+                        <span
+                          className="font-medium truncate block max-w-[120px]"
+                          title={m.wants}
+                        >
+                          {m.wants}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Can teach:{" "}
+                        <span
+                          className="font-medium truncate block max-w-[120px]"
+                          title={m.teaches}
+                        >
+                          {m.teaches}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-700 mt-2">
+                        <Star className="w-4 h-4 text-yellow-500" /> {m.rating}{" "}
+                        | {m.exchanges} exchanges
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      Can teach:{" "}
-                      <span className="font-medium">{m.teaches}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700 mt-2">
-                      <Star className="w-4 h-4 text-yellow-500" /> {m.rating} |{" "}
-                      {m.exchanges} exchanges
-                    </div>
+                    <img
+                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                        m.name
+                      )}`}
+                      alt={m.name}
+                      className="w-12 h-12 rounded-xl border border-gray-200"
+                    />
                   </div>
-                  <img
-                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                      m.name
-                    )}`}
-                    alt={m.name}
-                    className="w-12 h-12 rounded-xl border border-gray-200"
-                  />
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" variant="primary">
-                    Connect
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    View Profile
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" variant="primary">
+                      Connect
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      View Profile
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
         </div>
         {canScrollLeft && (
