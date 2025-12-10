@@ -1,0 +1,4 @@
+export const API_URLS = {
+  COMMUNICATION_SERVICE: import.meta.env
+    .VITE_EXCHANGE_COMMUNICATION_SERVICE_BASE_URL,
+};

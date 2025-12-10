@@ -15,8 +15,10 @@ import {
   Briefcase,
   PlusCircle,
   XCircle,
+  MessageSquare,
 } from "lucide-react";
 import SkillSelector from "../components/signup/SkillSelector";
+import { chatService } from "../services/chat.service";
 
 type EditForm = {
   name?: string;
@@ -245,6 +247,20 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleMessage = async () => {
+    if (!user) return;
+    try {
+      const conversation = await chatService.createConversation(
+        String(user.id)
+      );
+      navigate(`/messages?conversationId=${conversation.id}`);
+    } catch (e: any) {
+      console.error("Failed to start conversation", e);
+      // Fallback: navigate to messages anyway? Or show error?
+      navigate("/messages");
+    }
+  };
+
   if (!hasToken) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -383,9 +399,14 @@ const ProfilePage: React.FC = () => {
               )}
             </div>
 
-            {isOwnProfile && (
+            {isOwnProfile ? (
               <Button className="mt-6 w-full" onClick={openEdit}>
                 Edit Profile
+              </Button>
+            ) : (
+              <Button className="mt-6 w-full" onClick={handleMessage}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Message
               </Button>
             )}
           </Card>
