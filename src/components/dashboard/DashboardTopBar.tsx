@@ -61,6 +61,45 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
     navigate("/login");
   };
 
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  React.useEffect(() => {
+    // 1. Fetch initial unread count (sum of all conversations unread)
+    // We import chatService dynamically or at top if possible
+    import("../../services/chat.service").then(({ chatService }) => {
+      chatService
+        .getConversations()
+        .then((res) => {
+          const conversations = res.conversations;
+          if (Array.isArray(conversations)) {
+            const count = conversations.reduce(
+              (acc, curr) => acc + (curr.unreadCount || 0),
+              0
+            );
+            setUnreadCount(count);
+          }
+        })
+        .catch((err) => console.error("Failed to fetch unread count", err));
+    });
+
+    // 2. Subscribe to new notifications
+    import("../../services/socket.service").then(({ socketService }) => {
+      // Connect if not already (it singleton handles check)
+      socketService.connect();
+
+      const clean = socketService.onNotification((msg) => {
+        setUnreadCount((prev) => prev + 1);
+        // Optionally show toast here
+      });
+
+      // Also listen for read events if we want to decrement?
+      // "messages_read" is emitted to conversation room, need to listen globally?
+      // Usually notification center pulls or listens to "notifications".
+
+      return () => clean();
+    });
+  }, []);
+
   return (
     <div className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -150,9 +189,11 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
             aria-label="Notifications"
           >
             <Bell className="w-6 h-6" />
-            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
-              3
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
+                {unreadCount}
+              </span>
+            )}
           </motion.button>
 
           <div className="relative ml-1">
