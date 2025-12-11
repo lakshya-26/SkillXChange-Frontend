@@ -108,6 +108,14 @@ const ChatLayout: React.FC = () => {
     };
   }, []);
 
+  // Sync activeConversationId with URL params
+  useEffect(() => {
+    const id = searchParams.get("conversationId");
+    if (id) {
+      setActiveConversationId(id);
+    }
+  }, [searchParams]);
+
   const loadMoreConversations = async () => {
     if (!hasMoreConv || !currentUser) return;
     try {
@@ -158,6 +166,28 @@ const ChatLayout: React.FC = () => {
   useEffect(() => {
     if (activeConversationId) {
       if (!currentUser) return; // Wait for user
+
+      // Check if conversation exists in the list; if not, fetch it (for deep linking old chats)
+      const exists = conversations.find(
+        (c) => String(c.id) === String(activeConversationId)
+      );
+      if (!exists) {
+        chatService
+          .getConversationById(activeConversationId)
+          .then(async (c) => {
+            const [hydrated] = await hydrateConversations([c], currentUser);
+            setConversations((prev) => {
+              if (prev.find((p) => String(p.id) === String(hydrated.id))) {
+                return prev;
+              }
+              return [hydrated, ...prev];
+            });
+          })
+          .catch((err) =>
+            console.error("Failed to fetch active conversation details", err)
+          );
+      }
+
       // Join room and fetch messages
       socketService.joinConversation(activeConversationId);
 
@@ -177,7 +207,7 @@ const ChatLayout: React.FC = () => {
         })
         .catch((err) => console.error("Failed to load initial messages", err));
     }
-  }, [activeConversationId, currentUser]);
+  }, [activeConversationId, currentUser]); // We don't depend on 'conversations' to avoid loops; relies on closure state which is fine for 'exists' check on ID change
 
   // Listen for global incoming messages
   useEffect(() => {
@@ -185,7 +215,9 @@ const ChatLayout: React.FC = () => {
       "receive_message",
       (message: Message) => {
         setConversations((prev) => {
-          const index = prev.findIndex((c) => c.id === message.conversationId);
+          const index = prev.findIndex(
+            (c) => String(c.id) === String(message.conversationId)
+          );
           if (index === -1) {
             chatService
               .getConversations(1, 20) // Fetch first page again or just create logic to add one? Simpler to fetch latest.
@@ -235,7 +267,7 @@ const ChatLayout: React.FC = () => {
           return updated;
         });
 
-        if (activeConversationId === message.conversationId) {
+        if (String(activeConversationId) === String(message.conversationId)) {
           setMessages((prev) => [...prev, message]);
         }
       }
@@ -275,7 +307,7 @@ const ChatLayout: React.FC = () => {
   };
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId
+    (c) => String(c.id) === String(activeConversationId)
   );
 
   if (loading) {
