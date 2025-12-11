@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { Star, Filter, ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,11 +16,13 @@ type Match = {
 };
 
 const DiscoverySection: React.FC = () => {
+  const navigate = useNavigate();
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
   const [matches, setMatches] = React.useState<Match[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [connecting, setConnecting] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const fetchRecommendations = async () => {
@@ -80,6 +83,19 @@ const DiscoverySection: React.FC = () => {
     if (!el) return;
     const cardWidth = 320;
     el.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
+  };
+
+  const handleConnect = async (userId: string) => {
+    setConnecting(userId);
+    try {
+      const { chatService } = await import("../../services/chat.service");
+      const conv = await chatService.createConversation(userId);
+      navigate(`/messages?conversationId=${conv.id}`);
+    } catch (err) {
+      console.error("Failed to connect", err);
+    } finally {
+      setConnecting(null);
+    }
   };
 
   return (
@@ -148,10 +164,19 @@ const DiscoverySection: React.FC = () => {
                     />
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button size="sm" variant="primary">
-                      Connect
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => handleConnect(m.id)}
+                      disabled={connecting === m.id}
+                    >
+                      {connecting === m.id ? "..." : "Connect"}
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/profile/${m.id}`)}
+                    >
                       View Profile
                     </Button>
                   </div>

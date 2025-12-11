@@ -88,7 +88,7 @@ const createConversation = async (
   const response = await fetch(`${BASE_URL}`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ participantId }),
+    body: JSON.stringify({ userB: participantId }),
   });
 
   if (!response.ok) {
@@ -99,8 +99,23 @@ const createConversation = async (
   return result.data;
 };
 
+const getConversationById = async (id: string): Promise<Conversation> => {
+  const response = await fetch(`${BASE_URL}/${id}`, {
+    method: "GET",
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch conversation");
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
 export const chatService = {
   getConversations,
   getMessages,
   createConversation,
+  getConversationById,
 };
