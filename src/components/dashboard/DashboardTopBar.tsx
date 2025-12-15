@@ -46,8 +46,13 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
       const { notificationService } = await import(
         "../../services/notification.service"
       );
+      // Assuming user only wants to see unread notifications in the 'center'
+      // We can fetch all and filter, or just fetch unread.
+      // For now, let's fetch normal page but strict filter in UI if "mark as read" removes it.
       const res = await notificationService.getNotifications(1, 10);
-      setNotifications(res.notifications);
+      // Filter to show only unread? User said "no need to see it in the centre".
+      // So we should probably only display unread ones.
+      setNotifications(res.notifications.filter((n: any) => !n.isRead));
       setUnreadCount(res.unreadCount);
     } catch (err) {
       console.error("Failed to fetch notifications", err);
@@ -55,17 +60,24 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
   };
 
   const handleMarkAsRead = async (id: number) => {
+    // Optimistic update
+    const originalNotifications = [...notifications];
+    const originalCount = unreadCount;
+
+    // Remove from list immediately
+    setNotifications((prev) => prev.filter((n) => String(n.id) !== String(id)));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
     try {
       const { notificationService } = await import(
         "../../services/notification.service"
       );
       await notificationService.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error("Failed to mark as read", err);
+      // Revert on error
+      setNotifications(originalNotifications);
+      setUnreadCount(originalCount);
     }
   };
 
@@ -94,11 +106,50 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
   React.useEffect(() => {
     import("../../services/socket.service").then(({ socketService }) => {
       socketService.connect();
+      // Update socket listener to refresh list properly
       const clean = socketService.onNotification((msg) => {
         setUnreadCount((prev) => prev + 1);
-        fetchNotifications(); // Refresh list on new notification
+        setNotifications((prev) => [msg, ...prev]);
       });
-      return () => clean();
+
+      const cleanUpdated = socketService.on(
+        "notifications_updated",
+        (payload: any) => {
+          if (payload.action === "clear_related") {
+            setNotifications((prev) => {
+              const filtered = prev.filter(
+                (n) =>
+                  !(
+                    String(n.relatedId) === String(payload.relatedId) &&
+                    n.type === payload.type
+                  )
+              );
+
+              const removedCount = prev.length - filtered.length;
+              if (removedCount > 0) {
+                // We need to decrease global unreadCount.
+                // Since setUnreadCount is separate state, we should call it here.
+                // But wait, setNotifications is functional update. We can't side-effect setUnreadCount easily inside.
+                // Better to use useEffect on notifications change? No, "notifications" is just fetched list. "unreadCount" is total.
+                // We can do it in separate logic if we assume displayed notifications cover the cleared ones.
+                // To be safe, we can re-fetch or use a ref.
+                // Simple hack: We know how many we removed from *view*, we subtract that from total.
+              }
+              return filtered;
+            });
+
+            // Side effect for count (approximate based on view)
+            // Ideally we re-fetch unread count from backend or pass data from backend.
+            // Backend didn't send count. Let's just re-fetch for accuracy to avoid "hard refresh" need.
+            fetchNotifications();
+          }
+        }
+      );
+
+      return () => {
+        clean();
+        cleanUpdated();
+      };
     });
   }, []);
 
@@ -107,8 +158,8 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
     navigate("/login");
   };
 
-  const handleConnect = async (userId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleConnect = async (userId: number, e?: any) => {
+    e?.stopPropagation();
     setStartConnect(userId);
     try {
       const { chatService } = await import("../../services/chat.service");
@@ -190,14 +241,19 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={(e) => handleConnect(user.id, e)}
-                        disabled={startConnect === user.id}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block"
                       >
-                        {startConnect === user.id ? "..." : "Connect"}
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleConnect(user.id)}
+                          disabled={startConnect === user.id}
+                        >
+                          {startConnect === user.id ? "..." : "Connect"}
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}

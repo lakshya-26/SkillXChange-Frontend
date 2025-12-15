@@ -62,6 +62,39 @@ const RightSidebar: React.FC = () => {
     return other?.name || "User";
   };
 
+  useEffect(() => {
+    import("../../services/socket.service").then(({ socketService }) => {
+      // Connect is likely already handled in App or TopBar, but consistent listener is fine
+      // Listen for message events to update recent chats in sidebar
+      const clean = socketService.on("receive_message", (_msg) => {
+        // Re-fetch or manually update?
+        // Fetching is safer for correct ordering and content
+        chatService.getConversations(1, 10).then((res) => {
+          if (currentUser) {
+            hydrateChats(res.conversations.slice(0, 3), currentUser).then(
+              setRecentChats
+            );
+          }
+        });
+      });
+
+      const cleanRead = socketService.on("messages_read", () => {
+        chatService.getConversations(1, 10).then((res) => {
+          if (currentUser) {
+            hydrateChats(res.conversations.slice(0, 3), currentUser).then(
+              setRecentChats
+            );
+          }
+        });
+      });
+
+      return () => {
+        clean();
+        cleanRead();
+      };
+    });
+  }, [currentUser]);
+
   return (
     <aside className="hidden xl:block w-80 shrink-0">
       <div className="sticky top-20 space-y-4">
@@ -79,7 +112,9 @@ const RightSidebar: React.FC = () => {
                 <li
                   key={chat.id}
                   className="cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
-                  onClick={() => navigate(`/messages?conversationId=${chat.id}`)}
+                  onClick={() =>
+                    navigate(`/messages?conversationId=${chat.id}`)
+                  }
                 >
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-gray-900">
@@ -96,8 +131,15 @@ const RightSidebar: React.FC = () => {
                         : ""}
                     </span>
                   </div>
-                  <div className="text-gray-500 truncate mt-0.5">
-                    {chat.lastMessage?.content || "No messages yet"}
+                  <div className="flex justify-between items-center mt-0.5">
+                    <div className="text-gray-500 truncate text-xs flex-1 pr-2">
+                      {chat.lastMessage?.content || "No messages yet"}
+                    </div>
+                    {chat.unreadCount !== undefined && chat.unreadCount > 0 && (
+                      <span className="flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                        {chat.unreadCount}
+                      </span>
+                    )}
                   </div>
                 </li>
               ))}
