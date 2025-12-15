@@ -220,25 +220,20 @@ const ChatLayout: React.FC = () => {
           );
           if (index === -1) {
             chatService
-              .getConversations(1, 20) // Fetch first page again or just create logic to add one? Simpler to fetch latest.
+              .getConversations(1, 1) // fetch top most recent
               .then(async (res) => {
-                if (currentUser) {
+                if (res.conversations.length > 0 && currentUser) {
                   const hydrated = await hydrateConversations(
                     res.conversations,
                     currentUser
                   );
-                  // Merge or replace? If we just fetch page 1, we replace page 1 but keep loaded subsequent pages?
-                  // Infinite scroll + realtime updates is tricky.
-                  // Ideally we preprend the new conversation if logic allows.
-                  // For now replacing with fresh page 1 + keeping others is complex.
-                  // Let's just prepend if we can find it in the result, or replace everything.
-                  // Replacing everything resets scroll.
-                  // If we just add it?
-                  // Let's try to fetch just that conversation? Not supported.
-                  // Re-fetching page 1:
-                  setConversations(hydrated); // This resets list which is acceptable for "new conversation" event usually.
-                  setConvPage(1);
-                  setHasMoreConv(res.hasMore);
+                  const newConv = hydrated[0];
+                  setConversations((current) => {
+                    // Check existence again to avoid race
+                    if (current.find((c) => c.id === newConv.id))
+                      return current;
+                    return [newConv, ...current];
+                  });
                 }
               });
             return prev;
@@ -252,7 +247,7 @@ const ChatLayout: React.FC = () => {
             createdAt: message.createdAt,
           };
 
-          if (message.conversationId !== activeConversationId) {
+          if (String(message.conversationId) !== String(activeConversationId)) {
             conv.unreadCount = (conv.unreadCount || 0) + 1;
           }
 
@@ -273,8 +268,29 @@ const ChatLayout: React.FC = () => {
       }
     );
 
+    const removeReadListener = socketService.on(
+      "messages_read",
+      (data: { conversationId: string; readBy: string }) => {
+        // When someone reads messages in a conversation
+        // If *I* read them (e.g. other tab), clear my count
+        // If *Other* reads them, maybe update status (not implemented visually yet)
+
+        if (String(data.readBy) === String(currentUser?.id)) {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (String(c.id) === String(data.conversationId)) {
+                return { ...c, unreadCount: 0 };
+              }
+              return c;
+            })
+          );
+        }
+      }
+    );
+
     return () => {
       removeListener();
+      removeReadListener();
     };
   }, [activeConversationId, currentUser]);
 
