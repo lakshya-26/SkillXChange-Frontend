@@ -1,15 +1,12 @@
 import React from "react";
-import {
-  Sparkles,
-  Star,
-  Search,
-  MessageSquare,
-} from "lucide-react";
+import { Sparkles, Star, Search, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { userService, type UserDetails } from "../../services/user.service";
 
 const WelcomeBanner: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = React.useState<UserDetails | null>(null);
 
   React.useEffect(() => {
@@ -46,7 +43,7 @@ const WelcomeBanner: React.FC = () => {
           >
             <Search className="w-4 h-4 mr-2" /> Find a Match
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => navigate("/messages")}>
             <MessageSquare className="w-3 h-3 mr-2" /> Open Messages
           </Button>
         </div>

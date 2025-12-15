@@ -9,6 +9,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import { authService } from "./services/auth.service";
+import ChatPage from "./pages/ChatPage";
 
 function App() {
   const hasToken = !!authService.getAccessToken();
@@ -30,6 +31,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:id" element={<ProfilePage />} />
+        <Route path="/messages" element={<ChatPage />} />
       </Routes>
     </>
   );
