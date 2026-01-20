@@ -13,6 +13,7 @@ type Match = {
   teaches: string;
   rating: number;
   exchanges: number;
+  formattedReasons: { prefix: string; skills: string[] }[];
 };
 
 const DiscoverySection: React.FC = () => {
@@ -28,22 +29,38 @@ const DiscoverySection: React.FC = () => {
     const fetchRecommendations = async () => {
       try {
         const data = await userService.getRecommendations();
-        const transformed: Match[] = data.map((user) => ({
-          id: String(user.id),
-          name: user.name,
-          wants:
-            user.skills
-              .filter((s) => s.type === "LEARN")
-              .map((s) => s.name)
-              .join(", ") || "None",
-          teaches:
-            user.skills
-              .filter((s) => s.type === "TEACH")
-              .map((s) => s.name)
-              .join(", ") || "None",
-          rating: Number((4.0 + Math.random()).toFixed(1)),
-          exchanges: Math.floor(Math.random() * 20),
-        }));
+        const transformed: Match[] = data.map((user) => {
+          const reasons: { prefix: string; skills: string[] }[] = [];
+
+          if (user.reasons?.theyTeachYou?.length) {
+            reasons.push({
+              prefix: "Can teach you",
+              skills: user.reasons.theyTeachYou,
+            });
+          }
+          if (user.reasons?.youTeachThem?.length) {
+            reasons.push({
+              prefix: "Wants to learn",
+              skills: user.reasons.youTeachThem,
+            });
+          }
+          if (reasons.length === 0 && user.reasons?.profileMatch) {
+            reasons.push({
+              prefix: "Based on profile match",
+              skills: [],
+            });
+          }
+
+          return {
+            id: String(user.id),
+            name: user.name,
+            wants: "", // Kept empty as field is in type but not displayed
+            teaches: "", // Kept empty as field is in type but not displayed
+            rating: Number((4.0 + Math.random()).toFixed(1)),
+            exchanges: Math.floor(Math.random() * 20),
+            formattedReasons: reasons,
+          };
+        });
         setMatches(transformed);
       } catch (error) {
         console.error("Failed to fetch recommendations:", error);
@@ -131,25 +148,27 @@ const DiscoverySection: React.FC = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-lg font-semibold">{m.name}</div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        Wants to learn:{" "}
-                        <span
-                          className="font-medium truncate block max-w-[120px]"
-                          title={m.wants}
-                        >
-                          {m.wants}
-                        </span>
+                      <div className="text-lg font-semibold mb-2">{m.name}</div>
+
+                      <div className="space-y-1 mb-3">
+                        {m.formattedReasons.map((reason, idx) => (
+                          <div
+                            key={idx}
+                            className="text-xs font-medium text-emerald-600 py-1 rounded"
+                          >
+                            {reason.prefix}
+                            {reason.skills.length > 0 && (
+                              <>
+                                :{" "}
+                                <span className="font-bold">
+                                  {reason.skills.join(", ")}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        Can teach:{" "}
-                        <span
-                          className="font-medium truncate block max-w-[120px]"
-                          title={m.teaches}
-                        >
-                          {m.teaches}
-                        </span>
-                      </div>
+
                       <div className="flex items-center gap-2 text-sm text-gray-700 mt-2">
                         <Star className="w-4 h-4 text-yellow-500" /> {m.rating}{" "}
                         | {m.exchanges} exchanges
@@ -157,7 +176,7 @@ const DiscoverySection: React.FC = () => {
                     </div>
                     <img
                       src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                        m.name
+                        m.name,
                       )}`}
                       alt={m.name}
                       className="w-12 h-12 rounded-xl border border-gray-200"
