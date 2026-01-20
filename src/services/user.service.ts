@@ -42,7 +42,7 @@ export const userService = {
     if (!res.ok)
       throw new Error(
         (await res.json().catch(() => ({}))).message ||
-          "Failed to fetch profile"
+          "Failed to fetch profile",
       );
     const { data } = await res.json();
     return data as UserDetails;
@@ -55,7 +55,7 @@ export const userService = {
     if (!res.ok)
       throw new Error(
         (await res.json().catch(() => ({}))).message ||
-          "Failed to fetch user profile"
+          "Failed to fetch user profile",
       );
     const { data } = await res.json();
     return data as UserDetails;
@@ -100,7 +100,7 @@ export const userService = {
       if (!res.ok)
         throw new Error(
           (await res.json().catch(() => ({}))).message ||
-            "Failed to update profile"
+            "Failed to update profile",
         );
       const { data } = await res.json();
       return data as UserDetails;
@@ -112,7 +112,7 @@ export const userService = {
       if (!res.ok)
         throw new Error(
           (await res.json().catch(() => ({}))).message ||
-            "Failed to update profile"
+            "Failed to update profile",
         );
       const { data } = await res.json();
       return data as UserDetails;
@@ -124,11 +124,12 @@ export const userService = {
       `${BASE_URL}/users/search?term=${encodeURIComponent(query)}`,
       {
         method: "GET",
-      }
+      },
     );
     if (!res.ok)
       throw new Error(
-        (await res.json().catch(() => ({}))).message || "Failed to search users"
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to search users",
       );
     const { data } = await res.json();
     return data as UserMatch[];
@@ -141,7 +142,7 @@ export const userService = {
     if (!res.ok)
       throw new Error(
         (await res.json().catch(() => ({}))).message ||
-          "Failed to fetch recommendations"
+          "Failed to fetch recommendations",
       );
     const { data } = await res.json();
     return data as UserMatch[];
@@ -156,4 +157,9 @@ export interface UserMatch {
   profession: string;
   skills: { id: number; name: string; type: "LEARN" | "TEACH" }[];
   score: number;
+  reasons: {
+    theyTeachYou: string[];
+    youTeachThem: string[];
+    profileMatch: boolean;
+  };
 }
