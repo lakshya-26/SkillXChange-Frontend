@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import Step1_BasicDetails from "../components/signup/Step1_BasicDetails";
 import Step2_SkillsToLearn from "../components/signup/Step2_SkillsToLearn";
 import Step3_SkillsToTeach from "../components/signup/Step3_SkillsToTeach";
@@ -21,7 +21,7 @@ interface SignupFormData {
   twitter?: string;
   github?: string;
   linkedin?: string;
-  googleToken: string; // Made required as it seems critical now
+  googleToken: string;
 }
 
 const SignupPage: React.FC = () => {
@@ -71,16 +71,16 @@ const SignupPage: React.FC = () => {
 
   const handleGoogleSuccess = async (response: any) => {
     try {
-      if (response.credential) {
-        const res = await authService.checkGoogleUser(response.credential);
-        const data = res.data; // Access the data object
+      if (response.access_token) {
+        const res = await authService.checkGoogleUser(response.access_token);
+        const data = res.data;
         if (data.exists) {
           alert(data.message || "Email already exists. Please log in.");
           navigate("/login");
         } else {
           setFormData((prev) => ({
             ...prev,
-            googleToken: response.credential,
+            googleToken: response.access_token,
             email: data.email,
             name: data.name || "",
           }));
@@ -92,6 +92,14 @@ const SignupPage: React.FC = () => {
       alert("Google Sign In Failed: " + (e.message || "Unknown error"));
     }
   };
+
+  const loginIndex = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => {
+      console.log("Signup Google Failed");
+      alert("Google Sign Up Failed");
+    },
+  });
 
   const renderStep = () => {
     switch (step) {
@@ -136,36 +144,43 @@ const SignupPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <Link to="/" className="inline-block">
-              <div className="flex items-center justify-center space-x-2">
-                <img
-                  src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png" // Using same logo url
-                  alt="SkillXChange Logo"
-                  className="w-10 h-10 object-contain"
-                />
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  SkillXChange
-                </span>
-              </div>
-            </Link>
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              Join the Community
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Sign in with Google to create your account.
-            </p>
-          </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => {
-                console.log("Signup Google Failed");
-              }}
-              text="signup_with"
-              useOneTap
-            />
+            <div className="text-center mb-8">
+              <Link to="/" className="inline-block">
+                <div className="flex items-center justify-center space-x-2">
+                  <img
+                    src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png"
+                    alt="SkillXChange Logo"
+                    className="w-10 h-10 object-contain"
+                  />
+                  <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    SkillXChange
+                  </span>
+                </div>
+              </Link>
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                Join the Community
+              </h2>
+              <p className="mt-2 text-gray-600">
+                Sign in with Google to create your account.
+              </p>
+            </div>
+
+            <button
+              onClick={() => loginIndex()}
+              className="flex items-center justify-center bg-white text-[#4285F4] border-2 border-[#4285F4] rounded shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden w-full max-w-[300px]"
+            >
+              <div className="p-3 h-full flex items-center justify-center">
+                <img
+                  src="https://res.cloudinary.com/dca9jrn70/image/upload/v1768997710/google-icon-logo-svgrepo-com_xdezam.svg"
+                  alt="G"
+                  className="w-6 h-6"
+                />
+              </div>
+              <div className="font-medium pr-3 font-roboto">
+                Sign up with Google
+              </div>
+            </button>
 
             <p className="mt-8 text-center text-sm text-gray-600">
               Already have an account?{" "}
@@ -181,6 +196,7 @@ const SignupPage: React.FC = () => {
       </div>
     );
   }
+  // ... return main ...
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
