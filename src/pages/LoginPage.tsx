@@ -2,31 +2,32 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { AtSign, Lock } from "lucide-react";
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
+import { GoogleLogin } from "@react-oauth/google";
 import { authService } from "../services/auth.service";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const {
-    register,
-    handleSubmit,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm();
 
-  const onSubmit = async (data: any) => {
+  const handleGoogleSuccess = async (response: any) => {
     try {
-      await authService.login(data.identifier, data.password);
-      console.log("Login successful!");
-      navigate("/dashboard");
+      if (response.credential) {
+        await authService.loginWithGoogle(response.credential);
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Login failed:", error.message);
-      setError("password", {
-        type: "manual",
-        message: error.message,
-      });
+      if (
+        error.message.includes("sign up") ||
+        error.message.includes("User not found")
+      ) {
+        navigate("/signup");
+      } else {
+        setError("root", { type: "manual", message: error.message });
+      }
     }
   };
 
@@ -54,50 +55,27 @@ const LoginPage: React.FC = () => {
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Welcome Back!
           </h2>
-          <p className="mt-2 text-gray-600">
-            Login to continue your skill exchange journey.
-          </p>
+          <p className="mt-2 text-gray-600">Login with Google to continue.</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <Input
-              icon={AtSign}
-              type="text"
-              placeholder="Email or Username"
-              {...register("identifier", {
-                required: "Email or Username is required",
-              })}
-              error={errors.identifier?.message as string}
-            />
-            <Input
-              icon={Lock}
-              type="password"
-              placeholder="Password"
-              {...register("password", { required: "Password is required" })}
-              error={errors.password?.message as string}
-            />
-
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <Link
-                  to="/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
+          {errors.root && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm w-full text-center">
+              {errors.root.message as string}
             </div>
+          )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Logging In..." : "Login"}
-            </Button>
-          </form>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => {
+              console.log("Login Failed");
+              setError("root", {
+                type: "manual",
+                message: "Google Login Failed",
+              });
+            }}
+            useOneTap
+          />
 
           <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account?{" "}

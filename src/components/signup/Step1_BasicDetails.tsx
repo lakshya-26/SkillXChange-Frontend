@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { User, AtSign, Briefcase, Lock, Zap } from "lucide-react";
+import { User, AtSign, Briefcase, Zap } from "lucide-react";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import { authService } from "../../services/auth.service";
@@ -18,12 +18,21 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
   const {
     register,
     handleSubmit,
-    watch,
     trigger,
     formState: { errors },
+    setValue,
+    reset,
   } = useForm({ defaultValues: formData, mode: "onBlur" });
 
-  const password = watch("password");
+  const isGoogleAuth = !!formData.googleToken;
+
+  useEffect(() => {
+    if (formData) {
+      reset(formData);
+      if (formData.name) setValue("name", formData.name);
+      if (formData.email) setValue("email", formData.email);
+    }
+  }, [formData, reset, setValue]);
 
   const onSubmit = async (data: any) => {
     const isValid = await trigger(["username", "email"]);
@@ -69,6 +78,7 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
             icon={User}
             placeholder="Full Name"
             {...register("name", { required: "Full Name is required" })}
+            defaultValue={formData.name}
             error={errors.name?.message as string}
           />
         </motion.div>
@@ -125,38 +135,12 @@ const Step1_BasicDetails: React.FC<Step1Props> = ({
                 }
               },
             })}
+            defaultValue={formData.email}
             error={errors.email?.message as string}
+            disabled={isGoogleAuth}
           />
         </motion.div>
-        <motion.div
-          variants={itemVariants}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <Input
-            icon={Lock}
-            type="password"
-            placeholder="Password"
-            {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 6,
-                message: "Password must be at least 6 characters",
-              },
-            })}
-            error={errors.password?.message as string}
-          />
-          <Input
-            icon={Lock}
-            type="password"
-            placeholder="Confirm Password"
-            {...register("confirmPassword", {
-              required: "Please confirm your password",
-              validate: (value) =>
-                value === password || "Passwords do not match",
-            })}
-            error={errors.confirmPassword?.message as string}
-          />
-        </motion.div>
+
         <motion.div variants={itemVariants} className="pt-4">
           <Button type="submit" className="w-full" size="lg">
             Next: Choose Skills to Learn

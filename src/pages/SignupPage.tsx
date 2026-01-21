@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import Step1_BasicDetails from "../components/signup/Step1_BasicDetails";
 import Step2_SkillsToLearn from "../components/signup/Step2_SkillsToLearn";
 import Step3_SkillsToTeach from "../components/signup/Step3_SkillsToTeach";
@@ -11,7 +12,6 @@ interface SignupFormData {
   name: string;
   username: string;
   email: string;
-  password: string;
   profession: string;
   skillsToLearn: string[];
   skillsToTeach: string[];
@@ -21,13 +21,15 @@ interface SignupFormData {
   twitter?: string;
   github?: string;
   linkedin?: string;
+  googleToken: string; // Made required as it seems critical now
 }
 
 const SignupPage: React.FC = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupFormData>(
-    {} as SignupFormData
+    {} as SignupFormData,
   );
+  const [googleAuthStarted, setGoogleAuthStarted] = useState(false);
   const navigate = useNavigate();
 
   const totalSteps = 4;
@@ -49,16 +51,16 @@ const SignupPage: React.FC = () => {
         finalData.name,
         finalData.username,
         finalData.email,
-        finalData.password,
         finalData.profession,
         finalData.skillsToLearn,
         finalData.skillsToTeach,
         finalData.address,
+        finalData.googleToken!,
         finalData.phoneNumber,
         finalData.instagram,
         finalData.twitter,
         finalData.github,
-        finalData.linkedin
+        finalData.linkedin,
       );
       console.log("Form submitted successfully!");
       navigate("/dashboard", { replace: true });
@@ -67,11 +69,36 @@ const SignupPage: React.FC = () => {
     }
   };
 
+  const handleGoogleSuccess = async (response: any) => {
+    try {
+      if (response.credential) {
+        const res = await authService.checkGoogleUser(response.credential);
+        const data = res.data; // Access the data object
+        if (data.exists) {
+          alert(data.message || "Email already exists. Please log in.");
+          navigate("/login");
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            googleToken: response.credential,
+            email: data.email,
+            name: data.name || "",
+          }));
+          setGoogleAuthStarted(true);
+        }
+      }
+    } catch (e: any) {
+      console.error("Google Signup Error:", e);
+      alert("Google Sign In Failed: " + (e.message || "Unknown error"));
+    }
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <Step1_BasicDetails
+            key={formData.email || "step1"}
             formData={formData}
             updateFormData={updateFormData}
           />
@@ -104,6 +131,56 @@ const SignupPage: React.FC = () => {
         return null;
     }
   };
+
+  if (!googleAuthStarted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <div className="flex items-center justify-center space-x-2">
+                <img
+                  src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png" // Using same logo url
+                  alt="SkillXChange Logo"
+                  className="w-10 h-10 object-contain"
+                />
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  SkillXChange
+                </span>
+              </div>
+            </Link>
+            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              Join the Community
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Sign in with Google to create your account.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                console.log("Signup Google Failed");
+              }}
+              text="signup_with"
+              useOneTap
+            />
+
+            <p className="mt-8 text-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
+                Log in here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
