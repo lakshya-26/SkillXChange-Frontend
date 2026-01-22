@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { userService, type UserDetails } from "../services/user.service";
+import {
+  userService,
+  type UserDetails,
+  type ProfileScore as ProfileScoreType,
+} from "../services/user.service";
 import { authService } from "../services/auth.service";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
@@ -17,10 +21,12 @@ import {
   XCircle,
   MessageSquare,
   CheckCircle,
-  AlertCircle,
-  ShieldCheck,
+  Star,
 } from "lucide-react";
 import SkillSelector from "../components/signup/SkillSelector";
+import ProfileScore from "../components/ProfileScore";
+import CircularProgressAvatar from "../components/CircularProgressAvatar";
+import RateUserModal from "../components/RateUserModal";
 import { chatService } from "../services/chat.service";
 import { auth } from "../firebase";
 import {
@@ -101,6 +107,32 @@ const SkillChips: React.FC<{
   );
 };
 
+const BadgeDisplay: React.FC<{ badges?: { badge_type: string }[] }> = ({
+  badges,
+}) => {
+  if (!badges || badges.length === 0) return null;
+  const colors: Record<string, string> = {
+    Verified: "bg-green-100 text-green-700",
+    Reliable: "bg-yellow-100 text-yellow-800",
+    "Top Rated": "bg-blue-100 text-blue-700",
+    "Active Mentor": "bg-purple-100 text-purple-700",
+  };
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mt-2">
+      {badges.map((b) => (
+        <span
+          key={b.badge_type}
+          className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+            colors[b.badge_type] || "bg-gray-100 text-gray-700"
+          }`}
+        >
+          {b.badge_type}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const ProfilePage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -109,6 +141,7 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({});
+  const [scoreData, setScoreData] = useState<ProfileScoreType | null>(null);
   const [avatarModal, setAvatarModal] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +159,9 @@ const ProfilePage: React.FC = () => {
   const [otp, setOtp] = useState("");
   const [otpModal, setOtpModal] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
+
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [rateModalOpen, setRateModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -163,6 +198,31 @@ const ProfilePage: React.FC = () => {
     if (!me || !user) return false;
     return String(me.id) === String(user.id);
   }, [me, user]);
+
+  useEffect(() => {
+    const calculateAndSetScore = async () => {
+      try {
+        const score = await userService.getProfileScore();
+        setScoreData(score);
+      } catch (e) {
+        console.error("Failed to fetch score", e);
+      }
+    };
+
+    if (!loading && user) {
+      if (isOwnProfile) {
+        calculateAndSetScore();
+      } else if (typeof user.profileScore === "number") {
+        setScoreData({
+          score: user.profileScore,
+          max: 100,
+          level: "Member",
+          earned: [],
+          missing: [],
+        });
+      }
+    }
+  }, [isOwnProfile, loading, user]);
 
   // Normalize skills to two string arrays
   const { learnSkills, teachSkills } = useMemo(() => {
@@ -323,6 +383,20 @@ const ProfilePage: React.FC = () => {
     );
   };
 
+  const handleScoreAction = (action: string) => {
+    const lower = action.toLowerCase();
+    if (lower.includes("teach")) openSkillModal("teach");
+    else if (lower.includes("learn")) openSkillModal("learn");
+    else if (lower.includes("skills")) openSkillModal("teach");
+    else if (lower.includes("profession") || lower.includes("bio")) openEdit();
+    else if (lower.includes("photo")) setAvatarModal(true);
+    else if (lower.includes("phone")) {
+      if (!user?.phoneNumber)
+        openEdit(); // Need phone number first
+      else sendOtp();
+    } else if (lower.includes("social") || lower.includes("links")) openEdit();
+  };
+
   const saveSkillModal = async () => {
     if (!skillModalOpen) return;
     try {
@@ -411,222 +485,253 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left: Avatar + quick actions */}
-        <div className="md:col-span-1">
-          <Card className="p-6 flex flex-col items-center">
-            {/* Avatar: show image if available, else initials */}
-            <button
-              onClick={() => isOwnProfile && setAvatarModal(true)}
-              className="w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center text-4xl font-bold shadow-lg hover:opacity-90 transition"
-              title={
-                isOwnProfile ? "Edit/Add profile picture" : "Profile picture"
-              }
-            >
-              {user.profileImage ? (
-                <img
-                  src={user.profileImage}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
+      <div className="max-w-6xl mx-auto">
+        {/* Top: Complete Profile Section (Full Width) */}
+        {isOwnProfile && scoreData && (
+          <div className="mb-6">
+            <ProfileScore scoreData={scoreData} onAction={handleScoreAction} />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left: Avatar + quick actions */}
+          <div className="md:col-span-1">
+            <Card className="p-6 flex flex-col items-center">
+              {/* Avatar with Circular Progress */}
+              <div className="mb-4">
+                <CircularProgressAvatar
+                  score={scoreData?.score || 0}
+                  imageUrl={user.profileImage}
+                  initials={initials(user.name)}
+                  size={140}
+                  onClick={
+                    isOwnProfile ? () => setAvatarModal(true) : undefined
+                  }
+                  isEditable={isOwnProfile}
                 />
-              ) : (
-                <span className="bg-gradient-to-br from-blue-600 to-blue-800 text-white w-full h-full flex items-center justify-center">
-                  {initials(user.name)}
-                </span>
-              )}
-            </button>
-            <h2 className="mt-4 text-xl font-bold">{user.name}</h2>
-            <p className="text-gray-500">@{user.username}</p>
+              </div>
 
-            <div className="w-full mt-6 space-y-2 text-sm text-gray-700">
-              {user?.profession && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 font-medium">
-                    <Briefcase size={16} />
-                    <span>Profession</span>
-                  </div>
-                  <span className="text-gray-600">{user.profession}</span>
+              <h2 className="mt-2 text-xl font-bold text-center">
+                {user.name}
+              </h2>
+              <p className="text-gray-500 text-center">@{user.username}</p>
+
+              <BadgeDisplay badges={user.badges} />
+
+              {typeof user.reputationScore === "number" && (
+                <div
+                  title="Reputation Score"
+                  className="mt-2 text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-100"
+                >
+                  Reputation: {user.reputationScore}
                 </div>
               )}
-              {user?.phoneNumber && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 font-medium">
-                    <Phone size={16} />
-                    <span>Phone</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">{user.phoneNumber}</span>
-                    {user.isPhoneVerified ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : isOwnProfile ? (
-                      <button
-                        onClick={sendOtp}
-                        disabled={sendingOtp}
-                        className="text-xs text-blue-600 hover:underline disabled:opacity-50"
-                      >
-                        {sendingOtp ? "Sending..." : "Verify"}
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-400">Unverified</span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {user?.address && (
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-1 font-medium">
-                    <MapPin size={16} />
-                    <span>Address</span>
-                  </div>
-                  <span className="text-gray-600 text-right max-w-[60%]">
-                    {user.address}
-                  </span>
-                </div>
-              )}
-            </div>
 
-            {isOwnProfile ? (
-              <Button className="mt-6 w-full" onClick={openEdit}>
-                Edit Profile
-              </Button>
-            ) : (
-              <Button className="mt-6 w-full" onClick={handleMessage}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Message
-              </Button>
-            )}
-          </Card>
-        </div>
-
-        {/* Right: Details + Skills + Socials */}
-        <div className="md:col-span-2">
-          <Card className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                  Basic Info
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  <div>
-                    <span className="text-gray-500 block text-xs">Name</span>
-                    <span className="font-medium">{user.name}</span>
+              <div className="w-full mt-6 space-y-2 text-sm text-gray-700">
+                {user?.profession && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 font-medium">
+                      <Briefcase size={16} />
+                      <span>Profession</span>
+                    </div>
+                    <span className="text-gray-600">{user.profession}</span>
                   </div>
-                  <div>
-                    <span className="text-gray-500 block text-xs">
-                      Username
-                    </span>
-                    <span className="font-medium">@{user.username}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block text-xs">Email</span>
+                )}
+                {user?.phoneNumber && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 font-medium">
+                      <Phone size={16} />
+                      <span>Phone</span>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{user.email}</span>
-                      {user.isEmailVerified && (
+                      <span className="text-gray-600">{user.phoneNumber}</span>
+                      {user.isPhoneVerified ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : isOwnProfile ? (
+                        <button
+                          onClick={sendOtp}
+                          disabled={sendingOtp}
+                          className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                        >
+                          {sendingOtp ? "Sending..." : "Verify"}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          Unverified
+                        </span>
                       )}
                     </div>
                   </div>
+                )}
+                {user?.address && (
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-1 font-medium">
+                      <MapPin size={16} />
+                      <span>Address</span>
+                    </div>
+                    <span className="text-gray-600 text-right max-w-[60%]">
+                      {user.address}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {isOwnProfile ? (
+                <Button className="mt-6 w-full" onClick={openEdit}>
+                  Edit Profile
+                </Button>
+              ) : (
+                <div className="w-full mt-6 space-y-2">
+                  <Button className="w-full" onClick={handleMessage}>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => setRateModalOpen(true)}
+                  >
+                    <Star className="w-4 h-4 mr-2" /> Rate User
+                  </Button>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Right: Details + Skills + Socials */}
+          <div className="md:col-span-2">
+            <Card className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Basic Info
+                  </h3>
+                  <div className="space-y-2 text-gray-700">
+                    <div>
+                      <span className="text-gray-500 block text-xs">Name</span>
+                      <span className="font-medium">{user.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-xs">
+                        Username
+                      </span>
+                      <span className="font-medium">@{user.username}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-xs">Email</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{user.email}</span>
+                        {user.isEmailVerified && (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Socials
+                  </h3>
+                  <div className="space-y-2 text-gray-700">
+                    {user?.instagram && (
+                      <div>
+                        <div className="flex items-center gap-1 font-medium text-gray-500">
+                          <Instagram size={12} />
+                          <span className="block text-xs">Instagram</span>
+                        </div>
+                        <a
+                          className="font-medium text-blue-600"
+                          href={`https://instagram.com/${user.instagram}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          @{user.instagram}
+                        </a>
+                      </div>
+                    )}
+                    {user?.twitter && (
+                      <div>
+                        <div className="flex items-center gap-1 font-medium text-gray-500">
+                          <Twitter size={12} />
+                          <span className="block text-xs">Twitter</span>
+                        </div>
+                        <a
+                          className="font-medium text-blue-600"
+                          href={`https://twitter.com/${user.twitter}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          @{user.twitter}
+                        </a>
+                      </div>
+                    )}
+                    {user?.github && (
+                      <div>
+                        <div className="flex items-center gap-1 font-medium text-gray-500">
+                          <Github size={12} />
+                          <span className="block text-xs">GitHub</span>
+                        </div>
+                        <a
+                          className="font-medium text-blue-600"
+                          href={`https://github.com/${user.github}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          @{user.github}
+                        </a>
+                      </div>
+                    )}
+                    {user?.linkedin && (
+                      <div>
+                        <div className="flex items-center gap-1 font-medium text-gray-500">
+                          <Linkedin size={12} />
+                          <span className="block text-xs">LinkedIn</span>
+                        </div>
+                        <a
+                          className="font-medium text-blue-600"
+                          href={`https://linkedin.com/in/${user.linkedin}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          /in/{user.linkedin}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                  Socials
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  {user?.instagram && (
-                    <div>
-                      <div className="flex items-center gap-1 font-medium text-gray-500">
-                        <Instagram size={12} />
-                        <span className="block text-xs">Instagram</span>
-                      </div>
-                      <a
-                        className="font-medium text-blue-600"
-                        href={`https://instagram.com/${user.instagram}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        @{user.instagram}
-                      </a>
-                    </div>
-                  )}
-                  {user?.twitter && (
-                    <div>
-                      <div className="flex items-center gap-1 font-medium text-gray-500">
-                        <Twitter size={12} />
-                        <span className="block text-xs">Twitter</span>
-                      </div>
-                      <a
-                        className="font-medium text-blue-600"
-                        href={`https://twitter.com/${user.twitter}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        @{user.twitter}
-                      </a>
-                    </div>
-                  )}
-                  {user?.github && (
-                    <div>
-                      <div className="flex items-center gap-1 font-medium text-gray-500">
-                        <Github size={12} />
-                        <span className="block text-xs">GitHub</span>
-                      </div>
-                      <a
-                        className="font-medium text-blue-600"
-                        href={`https://github.com/${user.github}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        @{user.github}
-                      </a>
-                    </div>
-                  )}
-                  {user?.linkedin && (
-                    <div>
-                      <div className="flex items-center gap-1 font-medium text-gray-500">
-                        <Linkedin size={12} />
-                        <span className="block text-xs">LinkedIn</span>
-                      </div>
-                      <a
-                        className="font-medium text-blue-600"
-                        href={`https://linkedin.com/in/${user.linkedin}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        /in/{user.linkedin}
-                      </a>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-8">
+                <SkillChips
+                  title="Skills to Learn"
+                  skills={learnSkills}
+                  colorClass="bg-blue-50 text-blue-700 border border-blue-200"
+                  onAdd={
+                    isOwnProfile ? () => openSkillModal("learn") : undefined
+                  }
+                  onRemove={
+                    isOwnProfile
+                      ? (s) => handleRemoveSkill("learn", s)
+                      : undefined
+                  }
+                />
+                <SkillChips
+                  title="Skills to Teach"
+                  skills={teachSkills}
+                  colorClass="bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  onAdd={
+                    isOwnProfile ? () => openSkillModal("teach") : undefined
+                  }
+                  onRemove={
+                    isOwnProfile
+                      ? (s) => handleRemoveSkill("teach", s)
+                      : undefined
+                  }
+                />
               </div>
-            </div>
-
-            <div className="mt-8">
-              <SkillChips
-                title="Skills to Learn"
-                skills={learnSkills}
-                colorClass="bg-blue-50 text-blue-700 border border-blue-200"
-                onAdd={isOwnProfile ? () => openSkillModal("learn") : undefined}
-                onRemove={
-                  isOwnProfile
-                    ? (s) => handleRemoveSkill("learn", s)
-                    : undefined
-                }
-              />
-              <SkillChips
-                title="Skills to Teach"
-                skills={teachSkills}
-                colorClass="bg-emerald-50 text-emerald-700 border border-emerald-200"
-                onAdd={isOwnProfile ? () => openSkillModal("teach") : undefined}
-                onRemove={
-                  isOwnProfile
-                    ? (s) => handleRemoveSkill("teach", s)
-                    : undefined
-                }
-              />
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
 
@@ -871,6 +976,19 @@ const ProfilePage: React.FC = () => {
         </div>
       )}
       <div id="recaptcha-container"></div>
+
+      {rateModalOpen && user && (
+        <RateUserModal
+          rateeId={user.id}
+          rateeName={user.name}
+          onClose={() => setRateModalOpen(false)}
+          onSuccess={() => {
+            // We might want to reload the user profile to show updated stats/reputation
+            // But for now just alert.
+            alert("Rating submitted! It will appear after verification.");
+          }}
+        />
+      )}
     </div>
   );
 };
