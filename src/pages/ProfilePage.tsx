@@ -16,9 +16,18 @@ import {
   PlusCircle,
   XCircle,
   MessageSquare,
+  CheckCircle,
+  AlertCircle,
+  ShieldCheck,
 } from "lucide-react";
 import SkillSelector from "../components/signup/SkillSelector";
 import { chatService } from "../services/chat.service";
+import { auth } from "../firebase";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
+} from "firebase/auth";
 
 type EditForm = {
   name?: string;
@@ -75,12 +84,15 @@ const SkillChips: React.FC<{
           >
             {s}
             {onRemove && (
-              <XCircle
-                className="h-3.5 w-3.5 ml-2 cursor-pointer opacity-70 hover:opacity-100"
+              <button
+                type="button"
+                className="ml-2 cursor-pointer opacity-70 hover:opacity-100 flex items-center bg-transparent border-none p-0"
                 onClick={() => onRemove(s)}
                 aria-label={`Remove ${s}`}
                 title={`Remove ${s}`}
-              />
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
             )}
           </span>
         ))}
@@ -107,6 +119,14 @@ const ProfilePage: React.FC = () => {
     false | "learn" | "teach"
   >(false);
   const [skillTemp, setSkillTemp] = useState<string[]>([]);
+
+  // Verification State
+  const [verificationId, setVerificationId] =
+    useState<ConfirmationResult | null>(null);
+  const [otp, setOtp] = useState("");
+  const [otpModal, setOtpModal] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -251,7 +271,7 @@ const ProfilePage: React.FC = () => {
     if (!user) return;
     try {
       const conversation = await chatService.createConversation(
-        String(user.id)
+        String(user.id),
       );
       navigate(`/messages?conversationId=${conversation.id}`);
     } catch (e: any) {
@@ -299,7 +319,7 @@ const ProfilePage: React.FC = () => {
     if (!user) return;
     setSkillModalOpen(type);
     setSkillTemp(
-      type === "learn" ? user.skillsToLearn || [] : user.skillsToTeach || []
+      type === "learn" ? user.skillsToLearn || [] : user.skillsToTeach || [],
     );
   };
 
@@ -335,6 +355,57 @@ const ProfilePage: React.FC = () => {
       setUser(updated);
     } catch (e: any) {
       setError(e?.message || "Failed to remove skill");
+    }
+  };
+
+  const sendOtp = async () => {
+    if (!user?.phoneNumber) return;
+    setSendingOtp(true);
+    setError(null);
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+        },
+      );
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        `+91${user.phoneNumber}`,
+        recaptchaVerifier,
+      );
+      setVerificationId(confirmationResult);
+      setOtpModal(true);
+    } catch (e: any) {
+      console.error(e);
+      setError(
+        e.message ||
+          "Failed to send OTP. Check phone number format (e.g., +1234567890)",
+      );
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!verificationId) return;
+    setVerifyingOtp(true);
+    try {
+      await verificationId.confirm(otp);
+      // Success, update backend
+      const updated = await userService.updateProfile({
+        isPhoneVerified: true,
+      });
+      setMe((prev) => (prev && isOwnProfile ? updated : prev));
+      setUser(updated);
+      setOtpModal(false);
+      setOtp("");
+      setVerificationId(null);
+    } catch (e: any) {
+      setError("Invalid OTP or verification failed");
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -383,7 +454,22 @@ const ProfilePage: React.FC = () => {
                     <Phone size={16} />
                     <span>Phone</span>
                   </div>
-                  <span className="text-gray-600">{user.phoneNumber}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600">{user.phoneNumber}</span>
+                    {user.isPhoneVerified ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : isOwnProfile ? (
+                      <button
+                        onClick={sendOtp}
+                        disabled={sendingOtp}
+                        className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                      >
+                        {sendingOtp ? "Sending..." : "Verify"}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">Unverified</span>
+                    )}
+                  </div>
                 </div>
               )}
               {user?.address && (
@@ -433,7 +519,12 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-500 block text-xs">Email</span>
-                    <span className="font-medium">{user.email}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{user.email}</span>
+                      {user.isEmailVerified && (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -752,6 +843,34 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* OTP Modal */}
+      {otpModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Verify Phone Number</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Enter the OTP sent to {user?.phoneNumber}
+            </p>
+            <Input
+              type="text"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e: any) => setOtp(e.target.value)}
+              className="mb-4"
+            />
+            {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setOtpModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={verifyOtp} disabled={verifyingOtp || !otp}>
+                {verifyingOtp ? "Verifying..." : "Confirm"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div id="recaptcha-container"></div>
     </div>
   );
 };
