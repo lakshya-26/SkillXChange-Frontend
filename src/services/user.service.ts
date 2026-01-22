@@ -16,6 +16,8 @@ export type UserDetails = {
   profileImage?: string;
   skillsToLearn?: string[];
   skillsToTeach?: string[];
+  isEmailVerified?: boolean;
+  isPhoneVerified?: boolean;
 };
 
 type UpdatePayload = Partial<
@@ -32,7 +34,9 @@ type UpdatePayload = Partial<
     | "github"
     | "linkedin"
     | "skillsToLearn"
+    | "skillsToLearn"
     | "skillsToTeach"
+    | "isPhoneVerified"
   >
 >;
 
@@ -80,6 +84,7 @@ export const userService = {
         "twitter",
         "github",
         "linkedin",
+        "isPhoneVerified",
       ];
       scalarKeys.forEach((k) => {
         const val = payload[k];
