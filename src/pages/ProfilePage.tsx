@@ -107,27 +107,43 @@ const SkillChips: React.FC<{
   );
 };
 
-const BadgeDisplay: React.FC<{ badges?: { badge_type: string }[] }> = ({
-  badges,
-}) => {
+const BadgeDisplay: React.FC<{ badges?: string[] }> = ({ badges }) => {
   if (!badges || badges.length === 0) return null;
-  const colors: Record<string, string> = {
-    Verified: "bg-green-100 text-green-700",
-    Reliable: "bg-yellow-100 text-yellow-800",
-    "Top Rated": "bg-blue-100 text-blue-700",
-    "Active Mentor": "bg-purple-100 text-purple-700",
+
+  const badgeIcons: Record<string, string> = {
+    Verified:
+      "https://res.cloudinary.com/dca9jrn70/image/upload/v1769162173/image__5_-removebg-preview_lakgoj.svg",
+    Reliable:
+      "https://res.cloudinary.com/dca9jrn70/image/upload/v1769162173/image__6_-removebg-preview_e9kolt.svg",
+    "Top Rated":
+      "https://res.cloudinary.com/dca9jrn70/image/upload/v1769162173/image__7_-removebg-preview_rnbkva.svg",
+    "Active Mentor":
+      "https://res.cloudinary.com/dca9jrn70/image/upload/v1769162173/image__8_-removebg-preview_p4ylwx.svg",
   };
+
   return (
-    <div className="flex flex-wrap justify-center gap-2 mt-2">
-      {badges.map((b) => (
-        <span
-          key={b.badge_type}
-          className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-            colors[b.badge_type] || "bg-gray-100 text-gray-700"
-          }`}
+    <div className="flex flex-wrap justify-center gap-3 mt-3">
+      {badges.map((badgeName) => (
+        <div
+          key={badgeName}
+          className="group relative flex flex-col items-center"
         >
-          {b.badge_type}
-        </span>
+          {badgeIcons[badgeName] ? (
+            <img
+              src={badgeIcons[badgeName]}
+              alt={badgeName}
+              className="w-8 h-8 object-contain drop-shadow-sm hover:scale-110 transition-transform duration-200"
+              title={badgeName}
+            />
+          ) : (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+              {badgeName}
+            </span>
+          )}
+          <span className="absolute bottom-full mb-1 hidden group-hover:block px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-md whitespace-nowrap z-30">
+            {badgeName}
+          </span>
+        </div>
       ))}
     </div>
   );
