@@ -22,7 +22,7 @@ export type UserDetails = {
 
   reputationScore?: number;
   reputationUpdatedAt?: string;
-  badges?: Badge[];
+  badges?: string[];
 };
 
 export type Badge = {
