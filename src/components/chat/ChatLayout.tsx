@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import clsx from "clsx";
 import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
+import { useIsLargeScreen } from "../../hooks/useMediaQuery";
 import {
   chatService,
   type Conversation,
@@ -11,7 +13,9 @@ import { socketService } from "../../services/socket.service";
 import { userService, type UserDetails } from "../../services/user.service";
 
 const ChatLayout: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isLargeScreen = useIsLargeScreen();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
@@ -295,15 +299,22 @@ const ChatLayout: React.FC = () => {
   }, [activeConversationId, currentUser]);
 
   // Handle Conversation Selection
-  const handleSelectConversation = useCallback(async (id: string) => {
-    setActiveConversationId(id);
-    // Don't fetch here, useEffect will trigger on ID change and handle pagination reset/fetch
+  const handleSelectConversation = useCallback(
+    async (id: string) => {
+      setActiveConversationId(id);
+      setSearchParams({ conversationId: id }, { replace: true });
 
-    // Reset unread count locally
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
-    );
-  }, []);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
+      );
+    },
+    [setSearchParams],
+  );
+
+  const handleBackFromChat = useCallback(() => {
+    setActiveConversationId(null);
+    navigate("/messages", { replace: true });
+  }, [navigate]);
 
   // Handle Send Message
   const handleSendMessage = async (content: string) => {
@@ -328,17 +339,27 @@ const ChatLayout: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-        Loading...
+      <div className="flex items-center justify-center min-h-[12rem] md:min-h-[280px] text-gray-500 text-sm px-4">
+        Loading messages…
       </div>
     );
   }
 
-  if (!currentUser) return null; // Should redirect or show error
+  if (!currentUser) return null;
+
+  const showList =
+    isLargeScreen || !activeConversationId || activeConversationId === "";
+  const showChatPane =
+    isLargeScreen || (!!activeConversationId && activeConversationId !== "");
 
   return (
-    <div className="flex h-full overflow-hidden bg-white">
-      <div className="w-80 lg:w-96 shrink-0 border-r border-gray-100 bg-white">
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0 w-full overflow-hidden bg-white">
+      <div
+        className={clsx(
+          "flex flex-col min-h-0 w-full border-gray-100 bg-white shrink-0 lg:w-96 lg:border-r",
+          showList ? "flex-1 lg:flex-none min-h-0" : "hidden",
+        )}
+      >
         <ConversationList
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -349,7 +370,12 @@ const ChatLayout: React.FC = () => {
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
+      <div
+        className={clsx(
+          "flex flex-1 flex-col min-w-0 min-h-0 bg-white",
+          showChatPane ? "flex" : "hidden lg:flex",
+        )}
+      >
         {activeConversation ? (
           <ChatWindow
             conversation={activeConversation}
@@ -359,13 +385,14 @@ const ChatLayout: React.FC = () => {
             onLoadMore={loadMoreMessages}
             hasMore={hasMoreMsg}
             loadingMore={loadingMoreMsg}
+            onBack={isLargeScreen ? undefined : handleBackFromChat}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-            <div className="w-16 h-16 bg-gray-50 rounded-full mb-4 flex items-center justify-center">
-              <span className="text-2xl">👋</span>
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-50 rounded-full mb-4 flex items-center justify-center">
+              <span className="text-xl sm:text-2xl">👋</span>
             </div>
-            <p className="text-lg font-medium text-gray-700">
+            <p className="text-base sm:text-lg font-medium text-gray-700">
               Select a conversation to start chatting
             </p>
           </div>

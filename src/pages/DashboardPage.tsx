@@ -1,5 +1,4 @@
 import React from "react";
-import Footer from "../components/layout/Footer";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import RightSidebar from "../components/dashboard/RightSidebar";
 import WelcomeBanner from "../components/dashboard/WelcomeBanner";
@@ -11,7 +10,7 @@ import CommunityHighlights from "../components/dashboard/CommunityHighlights";
 const DashboardPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-6 lg:gap-8">
         {/* Main Feed Column */}
         <div className="space-y-6 min-w-0">
           <WelcomeBanner />

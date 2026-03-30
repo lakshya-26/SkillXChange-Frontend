@@ -192,12 +192,14 @@ export const userService = {
   },
 
   async searchUsers(query: string): Promise<UserMatch[]> {
-    const res = await apiFetch(
-      `${BASE_URL}/users/search?term=${encodeURIComponent(query)}`,
-      {
-        method: "GET",
-      },
-    );
+    const q = query.trim();
+    const url =
+      q === ""
+        ? `${BASE_URL}/users/search`
+        : `${BASE_URL}/users/search?term=${encodeURIComponent(q)}`;
+    const res = await apiFetch(url, {
+      method: "GET",
+    });
     if (!res.ok)
       throw new Error(
         (await res.json().catch(() => ({}))).message ||
@@ -219,6 +221,33 @@ export const userService = {
     const { data } = await res.json();
     return data as UserMatch[];
   },
+
+  async getSettings(): Promise<UserAppSettings> {
+    const res = await apiFetch(`${BASE_URL}/users/me/settings`, {
+      method: "GET",
+    });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to fetch settings",
+      );
+    const { data } = await res.json();
+    return data as UserAppSettings;
+  },
+
+  async patchSettings(payload: PatchUserAppSettings): Promise<UserAppSettings> {
+    const res = await apiFetch(`${BASE_URL}/users/me/settings`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to update settings",
+      );
+    const { data } = await res.json();
+    return data as UserAppSettings;
+  },
 };
 
 export interface UserMatch {
@@ -235,3 +264,22 @@ export interface UserMatch {
     profileMatch: boolean;
   };
 }
+
+export type UserAppSettings = {
+  availabilityNotes: string;
+  preferences: {
+    emailDigest?: boolean;
+    matchAlerts?: boolean;
+  };
+  privacy: {
+    showEmail?: boolean;
+    showPhone?: boolean;
+    profileVisibility?: "public" | "community";
+  };
+};
+
+export type PatchUserAppSettings = {
+  availabilityNotes?: string;
+  preferences?: Partial<UserAppSettings["preferences"]>;
+  privacy?: Partial<UserAppSettings["privacy"]>;
+};

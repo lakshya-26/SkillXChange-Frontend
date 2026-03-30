@@ -35,6 +35,7 @@ import {
   type ConfirmationResult,
 } from "firebase/auth";
 import DashboardLayout from "../components/layout/DashboardLayout";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 type EditForm = {
   name?: string;
@@ -153,6 +154,7 @@ const BadgeDisplay: React.FC<{ badges?: string[] }> = ({ badges }) => {
 const ProfilePage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isMdUp = useMediaQuery("(min-width: 768px)");
   const [me, setMe] = useState<UserDetails | null>(null);
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -493,23 +495,23 @@ const ProfilePage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="mt-6">
+      <div className="mt-2 sm:mt-6">
         {/* Profile Header Card */}
-        <div className="relative w-full rounded-3xl overflow-hidden p-6 md:p-10 shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-sky-100 ring-1 ring-blue-500/20">
+        <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden p-4 sm:p-6 md:p-10 shadow-lg bg-gradient-to-br from-blue-700 via-blue-600 to-sky-100 ring-1 ring-blue-500/20">
           {/* Sparkles / Background Decorations */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/15 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
           <div className="absolute bottom-0 left-20 w-40 h-40 bg-sky-200/40 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-white/50 rounded-full animate-pulse" />
           <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-white/40 rounded-full animate-pulse delay-700" />
 
-          <div className="relative flex flex-col md:flex-row items-center gap-8 z-10">
+          <div className="relative flex flex-col md:flex-row items-center gap-6 sm:gap-8 z-10">
             {/* Avatar */}
             <div className="shrink-0 p-1.5">
               <CircularProgressAvatar
                 score={scoreData?.score || 0}
                 imageUrl={user.profileImage}
                 initials={initials(user.name)}
-                size={140}
+                size={isMdUp ? 140 : 112}
                 onClick={isOwnProfile ? () => setAvatarModal(true) : undefined}
                 isEditable={isOwnProfile}
               />
@@ -518,7 +520,7 @@ const ProfilePage: React.FC = () => {
             {/* Info */}
             <div className="flex-1 text-center md:text-left space-y-2">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <h1 className="text-3xl font-bold text-white drop-shadow-sm">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-sm text-center md:text-left">
                   {user.name}
                 </h1>
                 {user.badges?.includes("Verified") && (
@@ -540,23 +542,26 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Actions (Absolute Top Right for Desktop, standard flow for mobile) */}
-            <div className="md:absolute md:top-0 md:right-0">
+            <div className="w-full md:w-auto md:absolute md:top-0 md:right-0">
               {isOwnProfile ? (
-                <Button onClick={openEdit} className="shadow-md border-0">
+                <Button
+                  onClick={openEdit}
+                  className="shadow-md border-0 w-full md:w-auto min-h-[44px]"
+                >
                   Edit Profile
                 </Button>
               ) : (
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
                   <Button
                     onClick={handleMessage}
-                    className="bg-white/80 hover:bg-white text-gray-900 border-none shadow-sm backdrop-blur-sm"
+                    className="bg-white/80 hover:bg-white text-gray-900 border-none shadow-sm backdrop-blur-sm w-full md:w-auto min-h-[44px]"
                   >
                     Message
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setRateModalOpen(true)}
-                    className="bg-white/50 hover:bg-white/70 text-gray-900 border-none backdrop-blur-sm"
+                    className="bg-white/50 hover:bg-white/70 text-gray-900 border-none backdrop-blur-sm w-full md:w-auto min-h-[44px]"
                   >
                     Rate
                   </Button>
@@ -568,10 +573,10 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-6 sm:mt-8">
         {/* Left Column: About & Contact */}
-        <div className="space-y-6">
-          <Card className="p-6">
+        <div className="space-y-4 sm:space-y-6">
+          <Card className="p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4 text-slate-900 flex items-center gap-2">
               <UserCircle className="w-5 h-5 text-primary" /> About
             </h3>
@@ -628,7 +633,7 @@ const ProfilePage: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4 text-slate-900 flex items-center gap-2">
               <Share2 className="w-5 h-5 text-primary" /> Socials
             </h3>
@@ -638,7 +643,7 @@ const ProfilePage: React.FC = () => {
                   href={`https://instagram.com/${user.instagram}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Instagram className="w-4 h-4 text-slate-500 shrink-0" />
@@ -656,7 +661,7 @@ const ProfilePage: React.FC = () => {
                   href={`https://twitter.com/${user.twitter}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Twitter className="w-4 h-4 text-slate-500 shrink-0" />
@@ -674,7 +679,7 @@ const ProfilePage: React.FC = () => {
                   href={`https://github.com/${user.github}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Github className="w-4 h-4 text-slate-500 shrink-0" />
@@ -692,7 +697,7 @@ const ProfilePage: React.FC = () => {
                   href={`https://linkedin.com/in/${user.linkedin}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl hover:bg-slate-50 transition-colors group border border-transparent hover:border-slate-100"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Linkedin className="w-4 h-4 text-slate-500 shrink-0" />
@@ -723,12 +728,12 @@ const ProfilePage: React.FC = () => {
             <ProfileScore scoreData={scoreData} onAction={handleScoreAction} />
           )}
 
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-6 text-slate-900">
+          <Card className="p-4 sm:p-6">
+            <h3 className="text-lg font-semibold mb-4 sm:mb-6 text-slate-900">
               Skills Exchange
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div>
                 <SkillChips
                   title="Skills I Want to Learn"
@@ -762,7 +767,7 @@ const ProfilePage: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4 text-slate-900">
               Badges & Achievements
             </h3>

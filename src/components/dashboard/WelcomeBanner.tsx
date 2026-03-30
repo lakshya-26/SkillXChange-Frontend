@@ -14,14 +14,14 @@ const WelcomeBanner: React.FC = () => {
   }, []);
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+    <Card className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl sm:text-2xl font-bold leading-snug">
               Hey, {user?.name ? user.name.split(" ")[0] : "User"}! Ready to
               learn something new today?
             </h2>
@@ -33,18 +33,31 @@ const WelcomeBanner: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
           <Button
             variant="primary"
             size="sm"
-            onClick={() =>
-              document.getElementById("dashboard-search-input")?.focus()
-            }
+            className="w-full sm:w-auto justify-center min-h-[44px]"
+            onClick={() => {
+              const input = document.getElementById(
+                "dashboard-search-input",
+              ) as HTMLInputElement | null;
+              if (input && window.matchMedia("(min-width: 768px)").matches) {
+                input.focus();
+                return;
+              }
+              navigate("/matches");
+            }}
           >
-            <Search className="w-4 h-4 mr-2" /> Find a Match
+            <Search className="w-4 h-4 mr-2 shrink-0" /> Find a Match
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/messages")}>
-            <MessageSquare className="w-3 h-3 mr-2" /> Open Messages
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto justify-center min-h-[44px]"
+            onClick={() => navigate("/messages")}
+          >
+            <MessageSquare className="w-4 h-4 mr-2 shrink-0" /> Open Messages
           </Button>
         </div>
       </div>

@@ -20,19 +20,28 @@ const navItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-const LeftSidebar: React.FC = () => {
+type LeftSidebarProps = {
+  /** Called after navigation (e.g. close mobile drawer). */
+  onNavigate?: () => void;
+};
+
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ onNavigate }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   return (
-    <nav className="space-y-1 p-2">
+    <nav className="space-y-1 p-2 pb-safe">
       {navItems.map(({ icon: Icon, label, path }) => {
         const isActive = location.pathname.startsWith(path);
         return (
           <button
             key={label}
-            onClick={() => navigate(path)}
-            className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden ${
+            type="button"
+            onClick={() => {
+              navigate(path);
+              onNavigate?.();
+            }}
+            className={`w-full flex items-center gap-4 px-4 py-3.5 min-h-[48px] rounded-2xl transition-all duration-300 group relative overflow-hidden ${
               isActive
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                 : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"

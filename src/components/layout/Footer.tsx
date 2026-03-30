@@ -163,8 +163,8 @@ const Footer: React.FC = () => {
         viewport={{ once: true }}
         className="border-t border-gray-800"
       >
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-safe">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-left">
             <div className="text-gray-400 text-sm">
               © {currentYear} SkillXChange. All rights reserved.
             </div>

@@ -44,9 +44,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-full md:w-80 lg:w-96">
-      <div className="p-4 border-b border-gray-100">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Messages</h2>
+    <div className="flex flex-col h-full min-h-0 bg-white w-full">
+      <div className="p-3 sm:p-4 border-b border-gray-100 shrink-0">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
+          Messages
+        </h2>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input

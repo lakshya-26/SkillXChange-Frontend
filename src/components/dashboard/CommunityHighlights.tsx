@@ -4,9 +4,12 @@ import Card from "../ui/Card";
 const CommunityHighlights: React.FC = () => {
   return (
     <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <h3 className="font-semibold">Community Highlights</h3>
-        <button className="text-sm text-blue-600 hover:underline">
+        <button
+          type="button"
+          className="text-sm text-blue-600 hover:underline text-left sm:text-right min-h-[44px] sm:min-h-0 flex items-center"
+        >
           Explore
         </button>
       </div>
