@@ -44,14 +44,14 @@ const LoginPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-50 flex flex-col items-center justify-center p-3 sm:p-4 py-8 pb-safe">
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md px-1"
       >
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 flex flex-col items-center">
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
               <div className="flex items-center justify-center space-x-2">
@@ -65,7 +65,7 @@ const LoginPage: React.FC = () => {
                 </span>
               </div>
             </Link>
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-bold text-gray-900">
               Welcome Back!
             </h2>
             <p className="mt-2 text-gray-600">Login with Google to continue.</p>

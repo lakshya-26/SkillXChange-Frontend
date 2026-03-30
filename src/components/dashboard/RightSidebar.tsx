@@ -166,12 +166,29 @@ const RightSidebar: React.FC = () => {
             <h3 className="font-semibold">Quick Settings</h3>
           </div>
           <div className="flex flex-wrap gap-2">
-            {["Profile", "Availability", "Preferences", "Privacy"].map((t) => (
+            {(
+              [
+                ["Profile", "/profile"],
+                [
+                  "Availability",
+                  { pathname: "/settings", search: "?tab=availability" },
+                ],
+                [
+                  "Preferences",
+                  { pathname: "/settings", search: "?tab=preferences" },
+                ],
+                ["Privacy", { pathname: "/settings", search: "?tab=privacy" }],
+              ] as const
+            ).map(([label, to]) => (
               <button
-                key={t}
+                key={label}
+                type="button"
                 className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
+                onClick={() =>
+                  navigate(typeof to === "string" ? to : { ...to })
+                }
               >
-                {t}
+                {label}
               </button>
             ))}
           </div>

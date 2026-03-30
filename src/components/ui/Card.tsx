@@ -14,9 +14,9 @@ const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <motion.div
-      whileHover={hover ? { y: -8, scale: 1.02 } : {}}
+      whileHover={hover ? { y: -5, scale: 1.01 } : {}}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden ${className}`}
+      className={`glass-card p-6 ${className}`}
     >
       {children}
     </motion.div>

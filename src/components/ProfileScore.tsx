@@ -16,7 +16,10 @@ const ProfileScore: React.FC<ProfileScoreProps> = ({ scoreData, onAction }) => {
   }
 
   return (
-    <Card className="p-6 mb-6 border-none shadow-lg bg-white/80">
+    <Card
+      hover={false}
+      className="mb-6 !bg-amber-50 border border-amber-100 shadow-md"
+    >
       <div className="flex items-center gap-2 mb-4">
         <AlertCircle size={20} className="text-amber-500" />
         <h3 className="text-lg font-bold text-gray-800">

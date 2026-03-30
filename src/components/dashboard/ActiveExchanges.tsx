@@ -50,10 +50,13 @@ const StatusChip: React.FC<{ status: Exchange["status"] }> = ({ status }) => {
 
 const ActiveExchanges: React.FC = () => {
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <h3 className="font-semibold">Active Exchanges</h3>
-        <button className="text-sm text-blue-600 hover:underline">
+        <button
+          type="button"
+          className="text-sm text-blue-600 hover:underline text-left min-h-[40px] sm:min-h-0 flex items-center"
+        >
           View all
         </button>
       </div>

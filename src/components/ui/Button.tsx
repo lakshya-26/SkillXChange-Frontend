@@ -7,7 +7,7 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "transparent";
   size?: "sm" | "md" | "lg";
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: any) => void;
   disabled?: boolean;
   to?: string;
   state?: { background?: any };
@@ -28,19 +28,19 @@ const Button: React.FC<ButtonProps> = ({
   baseClassRequired = true,
 }) => {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variantClasses = {
     primary:
-      "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl focus:ring-blue-500",
+      "bg-primary text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/30 hover:shadow-primary/40 focus:ring-ring",
     secondary:
-      "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500",
+      "bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:ring-ring border border-border",
     outline:
-      "border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 focus:ring-blue-500",
+      "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground text-foreground focus:ring-ring",
     ghost:
-      "text-gray-700 hover:text-blue-600 hover:bg-blue-50 focus:ring-blue-500",
+      "hover:bg-accent hover:text-accent-foreground text-foreground/80 focus:ring-ring",
     transparent:
-      "bg-transparent text-gray-700 hover:text-gray-900 focus:ring-gray-500",
+      "bg-transparent text-foreground hover:text-foreground/80 focus:ring-ring",
   };
 
   const sizeClasses = {

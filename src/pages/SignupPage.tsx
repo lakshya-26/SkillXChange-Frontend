@@ -199,8 +199,8 @@ const SignupPage: React.FC = () => {
   // ... return main ...
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-xl">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-50 flex flex-col items-center justify-center p-3 sm:p-4 py-8 pb-safe">
+      <div className="w-full max-w-xl px-1">
         {/* Logo */}
         <div className="text-center mb-4">
           <Link to="/" className="inline-block">
@@ -224,7 +224,7 @@ const SignupPage: React.FC = () => {
           transition={{ duration: 0.4 }}
           className="bg-white rounded-2xl shadow-xl w-full relative"
         >
-          <div className="p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             {/* Progress */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">

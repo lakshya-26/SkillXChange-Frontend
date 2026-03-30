@@ -2,7 +2,7 @@ import React, { forwardRef, useState } from "react";
 
 // The interface remains the same
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  icon?: React.ComponentType<any> | React.ComponentType;
+  icon?: React.ComponentType<{ className?: string }>;
   error?: string;
 }
 
