@@ -30,7 +30,7 @@ const ChatLayout: React.FC = () => {
   // Helper to hydrate users
   const hydrateConversations = async (
     convs: Conversation[],
-    user: UserDetails
+    user: UserDetails,
   ) => {
     // Hydrate with user names
     // Extract all unique userIds that are not current user
@@ -41,15 +41,15 @@ const ChatLayout: React.FC = () => {
         if (String(p.userId) !== String(user.id)) {
           userIdsToFetch.add(String(p.userId));
         }
-      })
+      }),
     );
 
     try {
       // We need to fetch profiles. If we have a bulk API, great. If not, parallel.
       const profiles = await Promise.all(
         Array.from(userIdsToFetch).map((id) =>
-          userService.profileById(id).catch(() => null)
-        )
+          userService.profileById(id).catch(() => null),
+        ),
       );
 
       const profileMap = new Map<string, UserDetails>();
@@ -142,7 +142,7 @@ const ChatLayout: React.FC = () => {
       const { messages: newMsgs, hasMore } = await chatService.getMessages(
         activeConversationId,
         nextPage,
-        20
+        20,
       );
 
       setMsgPage(nextPage);
@@ -150,7 +150,7 @@ const ChatLayout: React.FC = () => {
 
       const sortedNew = newMsgs.sort(
         (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
 
       // Prepend older messages
@@ -169,7 +169,7 @@ const ChatLayout: React.FC = () => {
 
       // Check if conversation exists in the list; if not, fetch it (for deep linking old chats)
       const exists = conversations.find(
-        (c) => String(c.id) === String(activeConversationId)
+        (c) => String(c.id) === String(activeConversationId),
       );
       if (!exists) {
         chatService
@@ -184,7 +184,7 @@ const ChatLayout: React.FC = () => {
             });
           })
           .catch((err) =>
-            console.error("Failed to fetch active conversation details", err)
+            console.error("Failed to fetch active conversation details", err),
           );
       }
 
@@ -200,7 +200,7 @@ const ChatLayout: React.FC = () => {
         .then((res) => {
           const sorted = res.messages.sort(
             (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
           );
           setMessages(sorted);
           setHasMoreMsg(res.hasMore);
@@ -216,7 +216,7 @@ const ChatLayout: React.FC = () => {
       (message: Message) => {
         setConversations((prev) => {
           const index = prev.findIndex(
-            (c) => String(c.id) === String(message.conversationId)
+            (c) => String(c.id) === String(message.conversationId),
           );
           if (index === -1) {
             chatService
@@ -225,7 +225,7 @@ const ChatLayout: React.FC = () => {
                 if (res.conversations.length > 0 && currentUser) {
                   const hydrated = await hydrateConversations(
                     res.conversations,
-                    currentUser
+                    currentUser,
                   );
                   const newConv = hydrated[0];
                   setConversations((current) => {
@@ -265,7 +265,7 @@ const ChatLayout: React.FC = () => {
         if (String(activeConversationId) === String(message.conversationId)) {
           setMessages((prev) => [...prev, message]);
         }
-      }
+      },
     );
 
     const removeReadListener = socketService.on(
@@ -282,10 +282,10 @@ const ChatLayout: React.FC = () => {
                 return { ...c, unreadCount: 0 };
               }
               return c;
-            })
+            }),
           );
         }
-      }
+      },
     );
 
     return () => {
@@ -301,7 +301,7 @@ const ChatLayout: React.FC = () => {
 
     // Reset unread count locally
     setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
     );
   }, []);
 
@@ -323,7 +323,7 @@ const ChatLayout: React.FC = () => {
   };
 
   const activeConversation = conversations.find(
-    (c) => String(c.id) === String(activeConversationId)
+    (c) => String(c.id) === String(activeConversationId),
   );
 
   if (loading) {
@@ -337,17 +337,19 @@ const ChatLayout: React.FC = () => {
   if (!currentUser) return null; // Should redirect or show error
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-      <ConversationList
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onSelectConversation={handleSelectConversation}
-        currentUserId={String(currentUser.id)}
-        onLoadMore={loadMoreConversations}
-        hasMore={hasMoreConv}
-      />
+    <div className="flex h-full overflow-hidden bg-white">
+      <div className="w-80 lg:w-96 shrink-0 border-r border-gray-100 bg-white">
+        <ConversationList
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          onSelectConversation={handleSelectConversation}
+          currentUserId={String(currentUser.id)}
+          onLoadMore={loadMoreConversations}
+          hasMore={hasMoreConv}
+        />
+      </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-white">
         {activeConversation ? (
           <ChatWindow
             conversation={activeConversation}
@@ -359,11 +361,11 @@ const ChatLayout: React.FC = () => {
             loadingMore={loadingMoreMsg}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-            <div className="w-16 h-16 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div className="w-16 h-16 bg-gray-50 rounded-full mb-4 flex items-center justify-center">
               <span className="text-2xl">👋</span>
             </div>
-            <p className="text-lg font-medium text-gray-600">
+            <p className="text-lg font-medium text-gray-700">
               Select a conversation to start chatting
             </p>
           </div>

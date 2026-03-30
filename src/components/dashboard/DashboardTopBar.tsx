@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Bell,
-  Search,
-  ChevronDown,
-  User,
-  LogOut,
-  UserCircle,
-} from "lucide-react";
+import { Bell, Search, ChevronDown, UserCircle, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Button from "../ui/Button";
@@ -43,15 +36,9 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
 
   const fetchNotifications = async () => {
     try {
-      const { notificationService } = await import(
-        "../../services/notification.service"
-      );
-      // Assuming user only wants to see unread notifications in the 'center'
-      // We can fetch all and filter, or just fetch unread.
-      // For now, let's fetch normal page but strict filter in UI if "mark as read" removes it.
+      const { notificationService } =
+        await import("../../services/notification.service");
       const res = await notificationService.getNotifications(1, 10);
-      // Filter to show only unread? User said "no need to see it in the centre".
-      // So we should probably only display unread ones.
       setNotifications(res.notifications.filter((n: any) => !n.isRead));
       setUnreadCount(res.unreadCount);
     } catch (err) {
@@ -60,22 +47,18 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
   };
 
   const handleMarkAsRead = async (id: number) => {
-    // Optimistic update
     const originalNotifications = [...notifications];
     const originalCount = unreadCount;
 
-    // Remove from list immediately
     setNotifications((prev) => prev.filter((n) => String(n.id) !== String(id)));
     setUnreadCount((prev) => Math.max(0, prev - 1));
 
     try {
-      const { notificationService } = await import(
-        "../../services/notification.service"
-      );
+      const { notificationService } =
+        await import("../../services/notification.service");
       await notificationService.markAsRead(id);
     } catch (err) {
       console.error("Failed to mark as read", err);
-      // Revert on error
       setNotifications(originalNotifications);
       setUnreadCount(originalCount);
     }
@@ -106,7 +89,6 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
   React.useEffect(() => {
     import("../../services/socket.service").then(({ socketService }) => {
       socketService.connect();
-      // Update socket listener to refresh list properly
       const clean = socketService.onNotification((msg) => {
         setUnreadCount((prev) => prev + 1);
         setNotifications((prev) => [msg, ...prev]);
@@ -122,28 +104,13 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
                   !(
                     String(n.relatedId) === String(payload.relatedId) &&
                     n.type === payload.type
-                  )
+                  ),
               );
-
-              const removedCount = prev.length - filtered.length;
-              if (removedCount > 0) {
-                // We need to decrease global unreadCount.
-                // Since setUnreadCount is separate state, we should call it here.
-                // But wait, setNotifications is functional update. We can't side-effect setUnreadCount easily inside.
-                // Better to use useEffect on notifications change? No, "notifications" is just fetched list. "unreadCount" is total.
-                // We can do it in separate logic if we assume displayed notifications cover the cleared ones.
-                // To be safe, we can re-fetch or use a ref.
-                // Simple hack: We know how many we removed from *view*, we subtract that from total.
-              }
               return filtered;
             });
-
-            // Side effect for count (approximate based on view)
-            // Ideally we re-fetch unread count from backend or pass data from backend.
-            // Backend didn't send count. Let's just re-fetch for accuracy to avoid "hard refresh" need.
             fetchNotifications();
           }
-        }
+        },
       );
 
       return () => {
@@ -171,221 +138,241 @@ const DashboardTopBar: React.FC<DashboardTopBarProps> = ({ onSearch }) => {
       setStartConnect(null);
     }
   };
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <div className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-16 flex items-center gap-4">
+    <header
+      className={`sticky top-0 z-50 w-full bg-[var(--card)] border-b border-[var(--border)] transition-all duration-200 ${
+        isScrolled ? "shadow-md" : ""
+      }`}
+    >
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-20 flex items-center justify-between gap-6">
+          {/* Logo */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-2 mr-2 cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            className="flex items-center gap-3 cursor-pointer shrink-0"
             onClick={() => navigate("/dashboard")}
           >
-            <img
-              src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png"
-              alt="SkillXChange"
-              className="w-9 h-9 object-contain"
-            />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+              <img
+                src="https://res.cloudinary.com/dca9jrn70/image/upload/v1757440583/skillXchange_logo_dnil4a.png"
+                alt="skillXchange"
+              />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hidden sm:block">
               SkillXChange
             </span>
           </motion.div>
 
           {/* Search Bar */}
-          <div className="flex-1 relative">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="flex-1 max-w-4xl relative hidden md:block">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none" />
               <input
                 id="dashboard-search-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onSearch?.(query);
-                }}
+                onKeyDown={(e) => e.key === "Enter" && onSearch?.(query)}
                 onFocus={() => query.length >= 2 && setShowResults(true)}
                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                placeholder="Search skills, people, or topics"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search for skills, mentors, or peers..."
+                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/80 text-[var(--foreground)] placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/35 focus:bg-[var(--card)] transition-all"
               />
             </div>
 
-            {showResults && (results.length > 0 || loading) && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 max-h-96 overflow-y-auto py-2">
-                {loading && results.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    Searching...
-                  </div>
-                ) : (
-                  results.map((user) => (
-                    <div
-                      key={user.id}
-                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 flex items-center justify-between gap-3 group"
-                      onClick={() => navigate(`/profile/${user.id}`)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium overflow-hidden">
-                          <img
-                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                              user.name
-                            )}`}
-                            alt={user.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {user.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {user.profession || "No profession listed"}
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-block"
-                      >
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleConnect(user.id)}
-                          disabled={startConnect === user.id}
-                        >
-                          {startConnect === user.id ? "..." : "Connect"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Notifications */}
-          <div className="relative">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              className={`relative p-2 rounded-xl text-gray-700 ${
-                showNotifications ? "bg-gray-100" : "hover:bg-gray-100"
-              }`}
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell className="w-6 h-6" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
-                  {unreadCount}
-                </span>
-              )}
-            </motion.button>
-
+            {/* Search Results Dropdown */}
             <AnimatePresence>
-              {showNotifications && (
+              {showResults && (results.length > 0 || loading) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 py-2 overflow-hidden max-h-[24rem] overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-0.5 bg-white rounded-2xl shadow-xl border border-gray-100 max-h-96 overflow-y-auto py-2 z-50 overflow-hidden"
                 >
-                  <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="font-semibold text-gray-900">
-                      Notifications
-                    </h3>
-                    <button
-                      onClick={() => setShowNotifications(false)}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Close
-                    </button>
-                  </div>
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500 text-sm">
-                      No notifications yet
+                  {loading && results.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      Searching...
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-50">
-                      {notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`px-4 py-3 hover:bg-gray-50 flex gap-3 ${
-                            !n.isRead ? "bg-blue-50/30" : ""
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-800">{n.body}</p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(n.createdAt).toLocaleDateString()}
-                            </p>
+                    results.map((user) => (
+                      <div
+                        key={user.id}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 flex items-center justify-between gap-3"
+                        onClick={() => navigate(`/profile/${user.id}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                              user.name,
+                            )}`}
+                            alt={user.name}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-white"
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {user.profession || "No profession"}
+                            </div>
                           </div>
-                          {!n.isRead && (
-                            <button
-                              onClick={() => handleMarkAsRead(n.id)}
-                              className="self-start text-xs text-blue-600 font-medium hover:underline shrink-0"
-                            >
-                              Mark as Read
-                            </button>
-                          )}
                         </div>
-                      ))}
-                    </div>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={(e) => handleConnect(user.id, e)}
+                          disabled={startConnect === user.id}
+                        >
+                          Connect
+                        </Button>
+                      </div>
+                    ))
                   )}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div className="relative ml-1">
-            <motion.div whileHover={{ y: -1 }}>
-              <Button
-                variant="secondary"
-                size="sm"
-                baseClassRequired={false}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+          {/* Right Actions */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                className={`relative p-2.5 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors ${
+                  showNotifications ? "bg-gray-100" : ""
+                }`}
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-1 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 overflow-hidden z-50 origin-top-right"
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-900">
+                        Notifications
+                      </h3>
+                      {unreadCount > 0 && (
+                        <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                          {unreadCount} New
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                          No new notifications
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`px-4 py-3 hover:bg-gray-50 flex gap-3 ${!n.isRead ? "bg-primary/5" : ""}`}
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-800">{n.body}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(n.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            {!n.isRead && (
+                              <button
+                                onClick={() => handleMarkAsRead(n.id)}
+                                className="self-start text-[10px] font-bold text-primary hover:underline"
+                              >
+                                MARK READ
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* User Profile */}
+            <div className="relative">
+              <button
+                className="flex items-center gap-3 p-1.5 pl-3 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
-                <User className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium">
-                  {user?.name || "User"}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              </Button>
-            </motion.div>
+                <div className="text-right hidden sm:block">
+                  <div className="text-xs font-bold text-gray-900">
+                    {user?.name}
+                  </div>
+                </div>
+                <img
+                  src={
+                    user?.profileImage ||
+                    `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name}`
+                  }
+                  className="w-9 h-9 rounded-full object-cover ring-2 ring-white"
+                  alt="Profile"
+                />
+                <ChevronDown size={14} className="text-gray-400 mr-1" />
+              </button>
 
-            <AnimatePresence>
-              {showDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden"
-                >
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => {
-                      setShowDropdown(false);
-                      navigate("/profile");
-                    }}
+              <AnimatePresence>
+                {showDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 overflow-hidden z-50 origin-top-right"
                   >
-                    <UserCircle className="w-4 h-4" />
-                    Profile
-                  </button>
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                    onClick={() => {
-                      setShowDropdown(false);
-                      handleLogout();
-                    }}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <div className="px-4 py-3 border-b border-gray-100 mb-2 sm:hidden">
+                      <p className="font-semibold text-gray-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-gray-500">@{user?.username}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        navigate("/profile");
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                    >
+                      <UserCircle size={18} /> Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleLogout();
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                    >
+                      <LogOut size={18} /> Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 
