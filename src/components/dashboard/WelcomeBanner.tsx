@@ -13,6 +13,9 @@ const WelcomeBanner: React.FC = () => {
     userService.me().then(setUser).catch(console.error);
   }, []);
 
+  const reputationPts = typeof user?.reputationScore === "number" ? user.reputationScore : 0;
+  const formattedPts = new Intl.NumberFormat().format(reputationPts);
+
   return (
     <Card className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -29,7 +32,7 @@ const WelcomeBanner: React.FC = () => {
               <Star className="w-4 h-4 text-yellow-500" />
               <span className="font-medium">Reputation</span>
               <span className="text-gray-500">•</span>
-              <span>1,240 pts</span>
+              <span>{formattedPts} pts</span>
             </div>
           </div>
         </div>

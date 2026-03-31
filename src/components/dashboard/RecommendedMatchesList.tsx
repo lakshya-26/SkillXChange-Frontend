@@ -10,7 +10,8 @@ type Match = {
   name: string;
   wants: string;
   teaches: string;
-  rating: number;
+  averageRating: number;
+  ratingCount: number;
   exchanges: number;
   formattedReasons: { prefix: string; skills: string[] }[];
 };
@@ -35,6 +36,14 @@ const RecommendedMatchesList: React.FC<RecommendedMatchesListProps> = ({
     const fetchRecommendations = async () => {
       try {
         const data = await userService.getRecommendations();
+        const profiles = await Promise.all(
+          data.map((u) => userService.profileById(u.id).catch(() => null)),
+        );
+        const profileMap = new Map<string, any>();
+        profiles.forEach((p) => {
+          if (p) profileMap.set(String(p.id), p);
+        });
+
         const transformed: Match[] = data.map((user) => {
           const reasons: { prefix: string; skills: string[] }[] = [];
 
@@ -62,8 +71,9 @@ const RecommendedMatchesList: React.FC<RecommendedMatchesListProps> = ({
             name: user.name,
             wants: "",
             teaches: "",
-            rating: Number((4.0 + Math.random()).toFixed(1)),
-            exchanges: Math.floor(Math.random() * 20),
+            averageRating: Number(profileMap.get(String(user.id))?.averageRating || 0),
+            ratingCount: Number(profileMap.get(String(user.id))?.ratingCount || 0),
+            exchanges: Number(profileMap.get(String(user.id))?.exchangeCount || 0),
             formattedReasons: reasons,
           };
         });
@@ -155,8 +165,9 @@ const RecommendedMatchesList: React.FC<RecommendedMatchesListProps> = ({
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-700 mt-2">
-            <Star className="w-4 h-4 text-yellow-500" /> {m.rating} |{" "}
-            {m.exchanges} exchanges
+            <Star className="w-4 h-4 text-yellow-500" />{" "}
+            {m.ratingCount > 0 ? m.averageRating.toFixed(1) : "—"}
+            {m.ratingCount > 0 ? ` (${m.ratingCount})` : ""} | {m.exchanges} exchanges
           </div>
         </div>
         <img

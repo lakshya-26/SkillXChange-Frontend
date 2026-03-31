@@ -38,6 +38,10 @@ export default defineConfig({
         lang: "en-US",
       },
       workbox: {
+        // Workbox uses terser internally for SW generation in production mode.
+        // In some environments this can cause an early-exit during build.
+        // Using development mode keeps SW generation reliable while retaining caching behavior.
+        mode: "development",
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {

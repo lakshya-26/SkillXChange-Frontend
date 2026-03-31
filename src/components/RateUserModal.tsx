@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import Button from "./ui/Button";
-import { userService } from "../services/user.service";
+import { sessionService } from "../services/session.service";
 import { Star } from "lucide-react";
 
 interface RateUserModalProps {
   rateeId: number;
   rateeName: string;
+  sessionId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -13,6 +14,7 @@ interface RateUserModalProps {
 const RateUserModal: React.FC<RateUserModalProps> = ({
   rateeId,
   rateeName,
+  sessionId,
   onClose,
   onSuccess,
 }) => {
@@ -23,20 +25,26 @@ const RateUserModal: React.FC<RateUserModalProps> = ({
   const [eligible, setEligible] = useState<boolean | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [resolvedConversationId, setResolvedConversationId] = useState("");
+  const [resolvedSessionId, setResolvedSessionId] = useState<string>(sessionId || "");
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       setChecking(true);
       try {
-        const res = await userService.checkRatingEligibility(rateeId);
+        if (sessionId) {
+          setEligible(true);
+          setResolvedSessionId(sessionId);
+          return;
+        }
+
+        const res = await sessionService.checkRatingEligibility(rateeId);
         if (!mounted) return;
         setEligible(res.allowed);
         if (!res.allowed) {
           setReason(res.reason || "Not eligible");
-        } else if (res.conversationId) {
-          setResolvedConversationId(res.conversationId);
+        } else if (res.sessionId) {
+          setResolvedSessionId(res.sessionId);
         }
       } catch (e: any) {
         if (!mounted) return;
@@ -48,7 +56,7 @@ const RateUserModal: React.FC<RateUserModalProps> = ({
     return () => {
       mounted = false;
     };
-  }, [rateeId]);
+  }, [rateeId, sessionId]);
 
   const submitRating = async () => {
     if (stars === 0) {
@@ -57,9 +65,9 @@ const RateUserModal: React.FC<RateUserModalProps> = ({
     }
     setLoading(true);
     try {
-      await userService.rateUser({
+      await sessionService.submitRating({
         rateeId,
-        conversationId: resolvedConversationId, // Verified ID or empty string if ignored by backend constraint
+        sessionId: resolvedSessionId,
         stars,
         feedback,
       });
@@ -77,8 +85,7 @@ const RateUserModal: React.FC<RateUserModalProps> = ({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <h3 className="text-lg font-semibold mb-2">Rate {rateeName}</h3>
         <p className="text-sm text-gray-500 mb-4">
-          Ratings are only allowed after a genuine interaction (5+ msgs each, 5+
-          min duration).
+          Ratings are only allowed after a completed skill exchange session.
         </p>
 
         {checking ? (
@@ -98,7 +105,7 @@ const RateUserModal: React.FC<RateUserModalProps> = ({
         ) : (
           <div className="space-y-4">
             <div className="bg-green-50 text-green-700 p-2 rounded text-sm mb-2 text-center">
-              ✓ Interaction Verified
+              ✓ Completed session verified
             </div>
 
             <div className="flex justify-center gap-2 mb-4">

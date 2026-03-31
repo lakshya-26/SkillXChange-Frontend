@@ -4,7 +4,7 @@ import ChatLayout from "../components/chat/ChatLayout";
 
 const ChatPage: React.FC = () => {
   return (
-    <DashboardLayout isFullWidth>
+    <DashboardLayout isFullWidth showFooter={false}>
       <ChatLayout />
     </DashboardLayout>
   );
