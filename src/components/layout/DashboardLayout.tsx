@@ -2,17 +2,23 @@ import React, { type ReactNode, useEffect, useState } from "react";
 import DashboardTopBar from "../dashboard/DashboardTopBar";
 import LeftSidebar from "../dashboard/LeftSidebar";
 import Footer from "../layout/Footer";
+import SessionActionModal from "../sessions/SessionActionModal";
+import { sessionService, type ActionNeeded } from "../../services/session.service";
 
 interface DashboardLayoutProps {
   children: ReactNode;
   isFullWidth?: boolean;
+  showFooter?: boolean;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   isFullWidth = false,
+  showFooter = true,
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [actionNeeded, setActionNeeded] = useState<ActionNeeded>({ type: "NONE" });
+  const [actionOpen, setActionOpen] = useState(false);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -22,6 +28,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       document.body.style.overflow = prev;
     };
   }, [mobileNavOpen]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const action = await sessionService.getActionNeeded();
+        if (!mounted) return;
+        setActionNeeded(action);
+        setActionOpen(action.type !== "NONE");
+      } catch {
+        if (!mounted) return;
+        setActionNeeded({ type: "NONE" });
+        setActionOpen(false);
+      }
+    };
+
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => {
+      mounted = false;
+      window.clearInterval(id);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[var(--background)] text-[var(--foreground)]">
@@ -75,7 +104,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </main>
       </div>
 
-      <Footer />
+      {showFooter && <Footer />}
+
+      <SessionActionModal
+        open={actionOpen && actionNeeded.type !== "NONE"}
+        action={actionNeeded}
+        onClose={() => setActionOpen(false)}
+        onRefresh={async () => {
+          const action = await sessionService.getActionNeeded();
+          setActionNeeded(action);
+          setActionOpen(action.type !== "NONE");
+        }}
+      />
     </div>
   );
 };

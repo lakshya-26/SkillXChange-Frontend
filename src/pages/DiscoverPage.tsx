@@ -112,7 +112,10 @@ const DiscoverPage: React.FC = () => {
           )}
           {!loading &&
             results.map((u) => (
-              <Card key={u.id} className="p-4 flex flex-col sm:flex-row gap-4">
+              <Card
+                key={u.id}
+                className="p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+              >
                 <img
                   src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
                     u.name,
@@ -147,11 +150,11 @@ const DiscoverPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto sm:pl-2">
                   <Button
                     size="sm"
                     variant="primary"
-                    className="w-full sm:w-auto min-h-[44px]"
+                    className="w-full sm:w-[7.5rem] min-h-[44px]"
                     onClick={() => handleConnect(u.id)}
                     disabled={connecting === u.id}
                   >
@@ -160,7 +163,7 @@ const DiscoverPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full sm:w-auto min-h-[44px]"
+                    className="w-full sm:w-[7.5rem] min-h-[44px]"
                     onClick={() => navigate(`/profile/${u.id}`)}
                   >
                     Profile

@@ -28,12 +28,6 @@ import ProfileScore from "../components/ProfileScore";
 import CircularProgressAvatar from "../components/CircularProgressAvatar";
 import RateUserModal from "../components/RateUserModal";
 import { chatService } from "../services/chat.service";
-import { auth } from "../firebase";
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  type ConfirmationResult,
-} from "firebase/auth";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 
@@ -172,14 +166,6 @@ const ProfilePage: React.FC = () => {
   >(false);
   const [skillTemp, setSkillTemp] = useState<string[]>([]);
 
-  // Verification State
-  const [verificationId, setVerificationId] =
-    useState<ConfirmationResult | null>(null);
-  const [otp, setOtp] = useState("");
-  const [otpModal, setOtpModal] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
-
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [rateModalOpen, setRateModalOpen] = useState(false);
 
   useEffect(() => {
@@ -400,11 +386,7 @@ const ProfilePage: React.FC = () => {
     else if (lower.includes("skills")) openSkillModal("teach");
     else if (lower.includes("profession") || lower.includes("bio")) openEdit();
     else if (lower.includes("photo")) setAvatarModal(true);
-    else if (lower.includes("phone")) {
-      if (!user?.phoneNumber)
-        openEdit(); // Need phone number first
-      else sendOtp();
-    } else if (lower.includes("social") || lower.includes("links")) openEdit();
+    else if (lower.includes("social") || lower.includes("links")) openEdit();
   };
 
   const saveSkillModal = async () => {
@@ -439,57 +421,6 @@ const ProfilePage: React.FC = () => {
       setUser(updated);
     } catch (e: any) {
       setError(e?.message || "Failed to remove skill");
-    }
-  };
-
-  const sendOtp = async () => {
-    if (!user?.phoneNumber) return;
-    setSendingOtp(true);
-    setError(null);
-    try {
-      const recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-        },
-      );
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        `+91${user.phoneNumber}`,
-        recaptchaVerifier,
-      );
-      setVerificationId(confirmationResult);
-      setOtpModal(true);
-    } catch (e: any) {
-      console.error(e);
-      setError(
-        e.message ||
-          "Failed to send OTP. Check phone number format (e.g., +1234567890)",
-      );
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    if (!verificationId) return;
-    setVerifyingOtp(true);
-    try {
-      await verificationId.confirm(otp);
-      // Success, update backend
-      const updated = await userService.updateProfile({
-        isPhoneVerified: true,
-      });
-      setMe((prev) => (prev && isOwnProfile ? updated : prev));
-      setUser(updated);
-      setOtpModal(false);
-      setOtp("");
-      setVerificationId(null);
-    } catch (e: any) {
-      setError("Invalid OTP or verification failed");
-    } finally {
-      setVerifyingOtp(false);
     }
   };
 
@@ -537,6 +468,26 @@ const ProfilePage: React.FC = () => {
               {user.reputationScore !== undefined && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 text-sm font-semibold text-slate-800 border border-white/80 shadow-sm">
                   <span>Reputation: {user.reputationScore}</span>
+                </div>
+              )}
+
+              {(typeof user.exchangeCount === "number" ||
+                typeof user.averageRating === "number") && (
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                  {typeof user.exchangeCount === "number" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 text-sm font-semibold text-slate-800 border border-white/70 shadow-sm">
+                      <span>Exchanges: {user.exchangeCount}</span>
+                    </div>
+                  )}
+                  {typeof user.averageRating === "number" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 text-sm font-semibold text-slate-800 border border-white/70 shadow-sm">
+                      <span>
+                        Rating:{" "}
+                        {user.ratingCount ? user.averageRating.toFixed(1) : "—"}
+                        {user.ratingCount ? ` (${user.ratingCount})` : ""}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -616,17 +567,6 @@ const ProfilePage: React.FC = () => {
                     <span className="text-slate-900 font-medium">
                       {user.phoneNumber || "-"}
                     </span>
-                    {user.phoneNumber &&
-                      isOwnProfile &&
-                      !user.isPhoneVerified && (
-                        <button
-                          onClick={sendOtp}
-                          disabled={sendingOtp}
-                          className="text-[10px] text-blue-500 hover:underline"
-                        >
-                          Verify
-                        </button>
-                      )}
                   </div>
                 </div>
               </div>
@@ -989,35 +929,6 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       )}
-      {/* OTP Modal */}
-      {otpModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">Verify Phone Number</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Enter the OTP sent to {user?.phoneNumber}
-            </p>
-            <Input
-              type="text"
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={(e: any) => setOtp(e.target.value)}
-              className="mb-4"
-            />
-            {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setOtpModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={verifyOtp} disabled={verifyingOtp || !otp}>
-                {verifyingOtp ? "Verifying..." : "Confirm"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      <div id="recaptcha-container"></div>
-
       {rateModalOpen && user && (
         <RateUserModal
           rateeId={user.id}

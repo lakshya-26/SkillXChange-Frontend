@@ -17,12 +17,14 @@ export type UserDetails = {
   skillsToLearn?: string[];
   skillsToTeach?: string[];
   isEmailVerified?: boolean;
-  isPhoneVerified?: boolean;
   profileScore?: number;
 
   reputationScore?: number;
   reputationUpdatedAt?: string;
   badges?: string[];
+  exchangeCount?: number;
+  averageRating?: number;
+  ratingCount?: number;
 };
 
 export type Badge = {
@@ -54,7 +56,6 @@ type UpdatePayload = Partial<
     | "skillsToLearn"
     | "skillsToLearn"
     | "skillsToTeach"
-    | "isPhoneVerified"
   >
 >;
 
@@ -151,7 +152,6 @@ export const userService = {
         "twitter",
         "github",
         "linkedin",
-        "isPhoneVerified",
       ];
       scalarKeys.forEach((k) => {
         const val = payload[k];
@@ -220,6 +220,29 @@ export const userService = {
       );
     const { data } = await res.json();
     return data as UserMatch[];
+  },
+
+  async getCommunityHighlights(): Promise<{
+    range: { from: string; to: string };
+    topLearnersThisMonth: {
+      userId: number;
+      name: string;
+      username: string | null;
+      exchanges: number;
+    }[];
+    mostTaughtSkill: { name: string | null; teachers: number } | null;
+    challenge: { title: string; subtitle: string };
+  }> {
+    const res = await apiFetch(`${BASE_URL}/users/community-highlights`, {
+      method: "GET",
+    });
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Failed to fetch community highlights",
+      );
+    const { data } = await res.json();
+    return data;
   },
 
   async getSettings(): Promise<UserAppSettings> {
