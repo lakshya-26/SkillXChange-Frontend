@@ -4,11 +4,14 @@ import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import { chatService, type Conversation } from "../../services/chat.service";
 import { userService, type UserDetails } from "../../services/user.service";
+import { sessionService, type Session } from "../../services/session.service";
+import { format } from "date-fns";
 
 const RightSidebar: React.FC = () => {
   const navigate = useNavigate();
   const [recentChats, setRecentChats] = useState<Conversation[]>([]);
   const [currentUser, setCurrentUser] = useState<UserDetails | null>(null);
+  const [upcoming, setUpcoming] = useState<Session[]>([]);
 
   useEffect(() => {
     userService
@@ -16,6 +19,37 @@ const RightSidebar: React.FC = () => {
       .then(setCurrentUser)
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await sessionService.listMySessions({ page: 1, limit: 25 });
+        if (!mounted) return;
+        const now = Date.now();
+        const up = (res.items || [])
+          .filter((s) => {
+            const start = new Date(s.scheduledAt).getTime();
+            return (
+              start > now &&
+              (s.status === "ACCEPTED" || s.status === "PENDING")
+            );
+          })
+          .sort(
+            (a, b) =>
+              new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+          )
+          .slice(0, 2);
+        setUpcoming(up);
+      } catch {
+        setUpcoming([]);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -153,10 +187,28 @@ const RightSidebar: React.FC = () => {
             <CalendarClock className="w-5 h-5 text-purple-600" />
             <h3 className="font-semibold">Upcoming Sessions</h3>
           </div>
-          <ul className="space-y-3 text-sm">
-            <li>Design basics with Ankit — Today 6 PM</li>
-            <li>Spanish practice with Maria — Wed 7 PM</li>
-          </ul>
+          {upcoming.length === 0 ? (
+            <p className="text-sm text-gray-500">No upcoming sessions</p>
+          ) : (
+            <ul className="space-y-3 text-sm">
+              {upcoming.map((s) => {
+                const other =
+                  currentUser && s.userAId === currentUser.id ? s.userB : s.userA;
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className="w-full text-left hover:underline"
+                      onClick={() => navigate("/sessions")}
+                    >
+                      {s.title} with {other?.name || "User"} —{" "}
+                      {format(new Date(s.scheduledAt), "PPp")}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Card>
 
         {/* Quick Settings Card */}
@@ -166,12 +218,29 @@ const RightSidebar: React.FC = () => {
             <h3 className="font-semibold">Quick Settings</h3>
           </div>
           <div className="flex flex-wrap gap-2">
-            {["Profile", "Availability", "Preferences", "Privacy"].map((t) => (
+            {(
+              [
+                ["Profile", "/profile"],
+                [
+                  "Availability",
+                  { pathname: "/settings", search: "?tab=availability" },
+                ],
+                [
+                  "Preferences",
+                  { pathname: "/settings", search: "?tab=preferences" },
+                ],
+                ["Privacy", { pathname: "/settings", search: "?tab=privacy" }],
+              ] as const
+            ).map(([label, to]) => (
               <button
-                key={t}
+                key={label}
+                type="button"
                 className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
+                onClick={() =>
+                  navigate(typeof to === "string" ? to : { ...to })
+                }
               >
-                {t}
+                {label}
               </button>
             ))}
           </div>

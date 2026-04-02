@@ -1,7 +1,5 @@
 import React from "react";
-import Footer from "../components/layout/Footer";
-import DashboardTopBar from "../components/dashboard/DashboardTopBar";
-import LeftSidebar from "../components/dashboard/LeftSidebar";
+import DashboardLayout from "../components/layout/DashboardLayout";
 import RightSidebar from "../components/dashboard/RightSidebar";
 import WelcomeBanner from "../components/dashboard/WelcomeBanner";
 import SkillsSummary from "../components/dashboard/SkillsSummary";
@@ -11,27 +9,25 @@ import CommunityHighlights from "../components/dashboard/CommunityHighlights";
 
 const DashboardPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardTopBar />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-8 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[16rem_1fr] xl:grid-cols-[16rem_1fr_20rem] gap-6">
-          <LeftSidebar />
-
-          <div className="space-y-6 min-w-0">
-            <WelcomeBanner />
+    <DashboardLayout>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-6 lg:gap-8">
+        {/* Main Feed Column */}
+        <div className="space-y-6 min-w-0">
+          <WelcomeBanner />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <SkillsSummary />
-            <DiscoverySection />
-            <ActiveExchanges />
             <CommunityHighlights />
           </div>
+          <DiscoverySection />
+          <ActiveExchanges />
+        </div>
 
+        {/* Right Widget Column */}
+        <div className="space-y-6">
           <RightSidebar />
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

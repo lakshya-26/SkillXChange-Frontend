@@ -39,48 +39,20 @@ const checkAvailability = async (params: {
   } as { available: boolean; data: any };
 };
 
-const login = async (identifier: string, password: string) => {
-  const isEmail = identifier.includes("@");
-  const body = isEmail
-    ? { email: identifier, password }
-    : { username: identifier, password };
-  const response = await fetch(`${BASE_URL}/users/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Login failed");
-  }
-
-  const data = await response.json();
-  if (data?.data?.accessToken && data?.data?.refreshToken) {
-    setTokens({
-      accessToken: data.data.accessToken,
-      refreshToken: data.data.refreshToken,
-    });
-  }
-  return data;
-};
-
 const signup = async (
   name: string,
   username: string,
   email: string,
-  password: string,
   profession: string,
   skillsToLearn: string[],
   skillsToTeach: string[],
   address: string,
+  googleToken: string,
   phoneNumber?: string,
   instagram?: string,
   twitter?: string,
   github?: string,
-  linkedin?: string
+  linkedin?: string,
 ) => {
   const response = await fetch(`${BASE_URL}/users/signup`, {
     method: "POST",
@@ -91,7 +63,6 @@ const signup = async (
       name,
       username,
       email,
-      password,
       profession,
       skillsToLearn,
       skillsToTeach,
@@ -101,6 +72,7 @@ const signup = async (
       twitter,
       github,
       linkedin,
+      googleToken,
     }),
   });
 
@@ -119,38 +91,42 @@ const signup = async (
   return data;
 };
 
-const forgotPassword = async (email: string) => {
-  const response = await fetch(`${BASE_URL}/users/forgot-password`, {
+const checkGoogleUser = async (googleToken: string) => {
+  const response = await fetch(`${BASE_URL}/users/google-check`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ googleToken }),
   });
 
+  // If status is 400+, throw error
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || "Forgot password failed");
+    throw new Error(errorData.message || "Google check failed");
   }
 
   return response.json();
 };
 
-const resetPassword = async (token: string, newPassword: string) => {
-  const response = await fetch(`${BASE_URL}/users/reset-password`, {
+const loginWithGoogle = async (googleToken: string) => {
+  const response = await fetch(`${BASE_URL}/users/google-login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ token, newPassword }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ googleToken }),
   });
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || "Reset password failed");
+    throw new Error(errorData.message || "Google login failed");
   }
 
-  return response.json();
+  const data = await response.json();
+  if (data?.data?.accessToken && data?.data?.refreshToken) {
+    setTokens({
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+    });
+  }
+  return data;
 };
 
 const refreshTokens = async (): Promise<Tokens> => {
@@ -177,11 +153,10 @@ const refreshTokens = async (): Promise<Tokens> => {
 };
 
 export const authService = {
-  login,
   signup,
-  forgotPassword,
-  resetPassword,
   checkAvailability,
+  checkGoogleUser,
+  loginWithGoogle,
   getAccessToken,
   getRefreshToken,
   setTokens,

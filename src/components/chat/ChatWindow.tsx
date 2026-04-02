@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Send, MoreVertical, Phone, Video } from "lucide-react";
+import { Send, MoreVertical, CalendarClock, ChevronLeft } from "lucide-react";
 import MessageBubble from "./MessageBubble";
+import ScheduleSessionModal from "./ScheduleSessionModal";
 import type { Message, Conversation } from "../../services/chat.service";
 import { socketService } from "../../services/socket.service";
 
@@ -12,6 +13,8 @@ interface ChatWindowProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  /** Shown on small screens to return to the conversation list. */
+  onBack?: () => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -22,6 +25,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onLoadMore,
   hasMore,
   loadingMore,
+  onBack,
 }) => {
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -31,6 +35,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -52,14 +59,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!container) return;
 
     if (container.scrollTop === 0 && hasMore && onLoadMore && !loadingMore) {
-      // Save current scroll height to restore position after loading
-      const currentScrollHeight = container.scrollHeight;
       onLoadMore();
-      // We'll need to adjust scrollTop after render, but React state update is async.
-      // A common trick is to use useLayoutEffect or a ref to track "we just loaded more".
-      // But for now let's just trigger it.
-      // The parent component prepends messages.
-      // To keep scroll position stable, we need to adjust scrollTop by (newScrollHeight - oldScrollHeight).
     }
   };
 
@@ -109,6 +109,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     };
   }, [conversation.id, currentUserId]);
 
+  useEffect(() => {
+    if (!headerMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (
+        headerMenuRef.current &&
+        !headerMenuRef.current.contains(e.target as Node)
+      ) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [headerMenuOpen]);
+
+  const otherUserId = otherParticipant
+    ? Number(otherParticipant.userId)
+    : NaN;
+  const canSchedule =
+    Number.isFinite(otherUserId) && otherUserId > 0 && !!otherParticipant;
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
 
@@ -131,10 +151,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#FAFAFA]">
+      {canSchedule && (
+        <ScheduleSessionModal
+          open={scheduleOpen}
+          onClose={() => setScheduleOpen(false)}
+          otherUserId={otherUserId}
+          otherUserName={
+            otherParticipant?.name || otherParticipant?.username || "them"
+          }
+        />
+      )}
       {/* Header */}
-      <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+      <div className="px-3 sm:px-5 py-3 sm:py-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-10 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="lg:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Back to conversations"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
             <img
               src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
                 otherParticipant?.name || "User"
@@ -143,11 +183,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               className="w-full h-full object-cover"
             />
           </div>
-          <div>
-            <h3 className="font-bold text-gray-900">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 truncate text-sm sm:text-base">
               {otherParticipant?.name || "Unknown User"}
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 truncate">
               {isTyping ? (
                 <span className="text-blue-600 font-medium">Typing...</span>
               ) : otherParticipant?.username ? (
@@ -158,23 +198,63 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition">
-            <Phone className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition">
-            <Video className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition">
-            <MoreVertical className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
+          {canSchedule && (
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(true)}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-blue-700 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition min-h-[44px] min-w-[44px] sm:min-w-0 justify-center border border-blue-100 sm:border-transparent"
+              aria-label="Schedule session"
+            >
+              <CalendarClock className="w-5 h-5 shrink-0" />
+              <span className="hidden sm:inline text-sm font-medium">
+                Schedule
+              </span>
+            </button>
+          )}
+          <div className="relative" ref={headerMenuRef}>
+            <button
+              type="button"
+              onClick={() => setHeaderMenuOpen((v) => !v)}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="More options"
+              aria-expanded={headerMenuOpen}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            {headerMenuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20"
+                role="menu"
+              >
+                {canSchedule && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full text-left px-4 py-3 text-sm text-gray-800 hover:bg-gray-50 min-h-[44px]"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      setScheduleOpen(true);
+                    }}
+                  >
+                    Schedule session
+                  </button>
+                )}
+                {!canSchedule && (
+                  <p className="px-4 py-3 text-xs text-gray-500">
+                    No other participant in this chat.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-6 py-4"
+        className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 overscroll-contain"
         onScroll={handleScroll}
       >
         {loadingMore && (
@@ -194,8 +274,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-gray-200">
-        <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+      <div className="p-3 sm:p-4 bg-white border-t border-gray-200 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-2 bg-gray-50 px-3 sm:px-4 py-2 rounded-xl sm:rounded-2xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
           <input
             value={inputValue}
             onChange={handleInputChange}
@@ -203,7 +283,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               if (e.key === "Enter") handleSend();
             }}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent border-none focus:outline-none text-gray-700 placeholder-gray-400"
+            className="flex-1 bg-transparent border-none focus:outline-none text-gray-700 placeholder-gray-400 text-base sm:text-sm min-h-[44px]"
           />
           <button
             onClick={handleSend}

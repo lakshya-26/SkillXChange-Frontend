@@ -7,7 +7,7 @@ const HeroSection: React.FC = () => {
   const [videoLoaded, setVideoLoaded] = React.useState(false);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative min-h-screen min-h-[100dvh] flex items-center justify-center overflow-hidden pt-24 sm:pt-20 pb-8 pb-safe">
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
         <video
@@ -70,7 +70,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white"
+              className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight"
             >
               Exchange Skills,
             </motion.h1>
@@ -78,7 +78,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
+              className="text-4xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent leading-tight"
             >
               Not Money
             </motion.h1>
@@ -100,21 +100,21 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center pt-6 sm:pt-8 w-full max-w-lg sm:max-w-none mx-auto"
           >
             <Button
               to="/signup"
               variant="primary"
               size="lg"
-              className="px-8 py-4 text-lg"
+              className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto min-h-[48px] justify-center"
             >
-              <Users className="w-5 h-5 mr-2" />
+              <Users className="w-5 h-5 mr-2 shrink-0" />
               Start Exchanging Skills
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="px-8 py-4 text-lg bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20"
+              className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 w-full sm:w-auto min-h-[48px] justify-center"
             >
               <Play className="w-5 h-5 mr-2" />
               Watch Demo
